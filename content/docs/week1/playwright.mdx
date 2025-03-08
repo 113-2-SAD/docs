@@ -1,0 +1,168 @@
+---
+title: 軟體測試介紹：Playwright 入門
+icon: ShieldCheck
+---
+
+## 為什麼需要軟體測試？
+
+在軟體開發過程中，測試是不可或缺的一環，特別是在 **DevOps** 流程中，測試對於 **持續整合 (CI)** 和 **持續部署 (CD)** 至關重要。
+
+> 下一篇會介紹 DevOps 與 CI/CD 基本概念！
+
+透過 **自動化測試**，我們可以：
+
+✅ 確保應用程式功能正常運作  
+✅ 及早發現 Bug，減少除錯成本  
+✅ 增強軟體穩定性，提高使用者體驗
+
+---
+
+## 1. UI 測試工具比較
+
+在 UI 測試領域，常見的工具包括：
+
+| 工具           | 特點                             |
+| -------------- | -------------------------------- |
+| **Playwright** | 支援多瀏覽器、E2E 測試、強大 API |
+| Cypress        | 易用性高，適合 SPA 測試          |
+| Selenium       | 傳統 UI 測試工具，支援多種語言   |
+
+### **為什麼選擇 Playwright？**
+
+- **多瀏覽器支援**：Playwright 支援 **Chromium、Firefox、WebKit**，可跨瀏覽器測試。
+- **開發者友好**：由 Microsoft 開發，擁有良好的 API 設計與活躍的社群，所以通常有問題都能找到解答。
+- **支援無頭模式 (Headless mode)**：這是指你執行時不必看到瀏覽器視窗，在 CI/CD 中非常有用。
+
+> **Playwright API 設計非常直觀，所以其實 AI Agent 產品幾乎都是整合 Playwright 作為自動化爬蟲工具！**
+
+---
+
+## 2. Playwright 安裝與環境設定
+
+### **安裝並啟動 Todo App**
+
+先將 Todo App 下載到本地端：
+
+```bash
+git clone https://github.com/<YOUR_USERNAME>/<YOUR_REPO>.git
+```
+
+在專案根目錄執行以下指令，安裝依賴並啟動應用程式：
+
+```bash
+pnpm install  # 安裝依賴
+pnpm build    # 編譯應用程式
+pnpm start    # 啟動 Todo App
+```
+
+### **安裝 Playwright**
+
+進入前端應用程式目錄 (`./apps/frontend`)，執行以下指令：
+
+```bash
+cd apps/frontend  # 切換到前端應用程式目錄
+pnpm install -D @playwright/test  # 安裝 Playwright 測試框架
+```
+
+安裝完成後，執行初始化指令來下載 Playwright 測試所需的瀏覽器：
+
+```bash
+pnpm dlx playwright install
+```
+
+或者使用我們提供的快捷指令：
+
+```bash
+pnpm install:playwright
+```
+
+這將下載 **Chromium、Firefox、WebKit**，讓 Playwright 能夠進行跨瀏覽器測試。
+
+---
+
+## 3. 撰寫 Playwright 測試案例
+
+我們將對 **Todo App** 進行自動化測試，確保 **新增待辦事項功能** 正常運作。
+
+### **建立測試檔案 `todo.spec.js`**
+
+在 `tests/` 目錄下建立 `todo.spec.js`，並填入以下內容：
+
+```javascript
+import { test, expect } from "@playwright/test";
+
+test("測試新增待辦事項", async ({ page }) => {
+  // 1. 前往 Todo App
+  await page.goto("http://localhost:3000");
+
+  // 2. 填寫新待辦事項
+  await page.fill('input[name="title"]', "學習 Playwright");
+  await page.fill('textarea[name="description"]', "學習 Playwright 的使用方法");
+  await page.click('button[type="submit"]');
+
+  // 3. 確認待辦事項是否正確新增
+  const todoItem = await page.waitForSelector(".todo-item");
+  expect(await todoItem.innerText()).toContain("學習 Playwright");
+  expect(await todoItem.innerText()).toContain("學習 Playwright 的使用方法");
+});
+```
+
+### **測試腳本流程**
+
+1. **打開 Todo App** (`page.goto`)
+2. **填寫新待辦事項** (`page.fill`)
+3. **點擊新增按鈕** (`page.click`)
+4. **等待待辦事項出現** (`page.waitForSelector`)
+5. **驗證內容是否正確** (`expect`)
+
+---
+
+## 4. 執行 Playwright 測試
+
+完成測試腳本後，執行測試：
+
+```bash
+cd apps/frontend  # 切換到前端應用程式目錄
+pnpm dlx playwright test
+```
+
+或者使用我們提供的快捷指令：
+
+```bash
+pnpm test
+```
+
+若測試通過，終端機將顯示：
+
+```
+✔ 測試新增待辦事項 (1000ms)
+```
+
+若測試失敗，Playwright 會提供錯誤訊息與截圖，方便你排查問題。
+
+---
+
+## 5. 使用 GUI 測試監視工具
+
+Playwright 提供 **GUI 測試監視工具**，可視覺化測試過程：
+
+```bash
+cd apps/frontend
+pnpm dlx playwright test --ui
+```
+
+或者使用快捷指令：
+
+```bash
+pnpm test:ui
+```
+
+這將打開一個可視化介面，讓你逐步執行測試，並檢視測試過程、DOM 變化與 Console 訊息。
+
+---
+
+## 總結
+
+✅ Playwright 是一款 **現代化的 E2E、UI 測試工具**，有豐富的社群資源以及直觀的 API 設計。
+✅ 透過 Playwright，我們能夠輕鬆撰寫測試來驗證 **Todo App** 的功能，也可以很好的 debug。
+✅ 透過 **GUI 測試監視器** (`pnpm test:ui`)，我們可以視覺化執行測試，輕鬆檢視 DOM 狀態。

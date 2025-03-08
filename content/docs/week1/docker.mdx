@@ -1,0 +1,182 @@
+---
+title: Docker 基礎與應用
+icon: Container
+---
+
+## 為什麼要使用 Docker？
+
+在開發與部署應用程式時，常常會遇到以下問題：
+
+- **「在我的電腦可以跑，為什麼別人跑不起來？」**
+- **「開發、測試、正式環境的設定不一致，怎麼辦？」**
+- **「如何確保應用程式可以無縫遷移到雲端或其他機器？」**
+
+這些問題正是 **Docker** 能解決的關鍵痛點。本文將帶你理解 Docker 的核心概念，並手把手完成安裝與實作。
+
+---
+
+## Docker 介紹
+
+Docker 是一種 **容器化技術 (Containerization)**，能將應用程式及其所有依賴 (dependencies) 打包成 **映像檔 (Image)**，並能在任何支援 Docker 的環境中以 **容器 (Container)** 的形式執行。這帶來以下幾個關鍵優勢：
+
+1. **環境一致性**：開發、測試、部署環境保持一致，減少「它在我的電腦可以跑」的問題。
+2. **簡化部署流程**：只需執行 `docker run`，應用程式即可在任何地方運行。
+3. **高效資源利用**：相較於虛擬機 (VM)，Docker 容器更輕量，啟動速度快，且資源消耗較少。
+4. **隔離性**：每個應用程式運行在獨立的容器內，不會影響其他應用。
+5. **跨平台支援**：支援 Windows、macOS、Linux，並能無縫遷移至雲端環境。
+
+> Docker vs. 虛擬機 (VM)：Docker 容器直接運行在主機的核心 (Kernel) 上，不需要額外的虛擬化層 (如 Hypervisor)，因此比傳統 VM 更輕量且效能更佳。
+
+---
+
+## 安裝 Docker
+
+### Windows & macOS
+
+1. 下載 [Docker Desktop](https://www.docker.com/products/docker-desktop) 並安裝。
+2. **Windows 用戶** 需啟用 **WSL 2 (Windows Subsystem for Linux 2)**，在 PowerShell 中執行：
+   ```powershell
+   wsl --install
+   ```
+3. 測試安裝是否成功：
+   ```bash
+   docker run hello-world
+   ```
+
+### Linux (Ubuntu / Debian)
+
+1. 更新套件庫並安裝 Docker：
+   ```bash
+   sudo apt update
+   sudo apt install -y docker.io
+   sudo systemctl enable docker
+   ```
+2. 測試安裝是否成功：
+   ```bash
+   sudo docker run hello-world
+   ```
+
+---
+
+## 什麼是 Image 與 Container？
+
+Docker 主要包含兩個核心概念：
+
+1. **映像檔 (Image)**：應用程式的「模板」，包含程式碼、環境設定、依賴等。
+2. **容器 (Container)**：映像檔執行後的實例，每個容器都是獨立運行的應用程式環境。
+
+### Docker 基本指令
+
+| 指令                         | 作用                       |
+| ---------------------------- | -------------------------- |
+| `docker images`              | 列出本機所有 Docker 映像檔 |
+| `docker ps`                  | 列出正在運行的容器         |
+| `docker ps -a`               | 列出所有容器 (包含停止的)  |
+| `docker run <image>`         | 啟動一個容器               |
+| `docker stop <container_id>` | 停止容器                   |
+| `docker rm <container_id>`   | 刪除容器                   |
+| `docker rmi <image_id>`      | 刪除映像檔                 |
+
+---
+
+## 建立 Todo App 的 Docker 環境
+
+### 1. 建立前端的 `Dockerfile`
+
+```dockerfile
+# /apps/frontend/Dockerfile
+FROM node:20-alpine AS base-build
+RUN apk update && apk add --no-cache libc6-compat
+
+FROM node:20-alpine AS base-runner
+
+FROM base-build AS builder
+WORKDIR /app
+
+RUN npm install -g turbo
+
+COPY . .
+
+RUN turbo prune --scope=frontend --docker
+
+FROM base-build AS installer
+WORKDIR /app
+
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN npm install -g corepack@latest \
+    && corepack enable \
+    && corepack prepare pnpm@9.12.3 --activate
+
+RUN pnpm install --frozen-lockfile
+
+COPY --from=builder /app/out/full/ .
+
+RUN mkdir -p /app/apps/frontend/public
+
+RUN pnpm build --filter=frontend
+
+FROM base-runner AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+USER nextjs
+
+COPY --from=installer /app/apps/frontend/next.config.mjs .
+COPY --from=installer /app/apps/frontend/package.json .
+
+COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
+COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend/.next/static ./apps/frontend/.next/static
+COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend/public ./apps/frontend/public
+
+CMD ["node", "apps/frontend/server.js"]
+```
+
+### 2. 建立 Docker 映像檔
+
+```bash
+docker build -f ./apps/frontend/Dockerfile . -t todo-app-frontend
+
+docker images  # 確認映像檔是否建立成功
+```
+
+### 3. 啟動前端容器
+
+```bash
+docker run -d -p 3000:3000 todo-app-frontend
+
+docker ps  # 確認容器是否運行
+```
+
+### 4. 確認應用是否成功運行
+
+打開瀏覽器，訪問 `http://localhost:3000`，應該可以看到 Todo App 成功運行！
+
+---
+
+## 深入探討：Docker 底層運作原理
+
+Docker 的核心技術基於 **Linux Namespace 與 Cgroups**，它們負責資源隔離與管理。
+
+### **1. Namespaces（命名空間）**
+
+- 讓每個容器擁有獨立的網路、文件系統、進程表等。
+- 主要類型：PID（進程）、NET（網路）、MNT（檔案系統）、IPC（訊息傳遞）、USER（使用者）。
+
+### **2. Cgroups（控制群組）**
+
+- 限制容器的資源，如 CPU、記憶體、I/O，避免某個容器獨佔系統資源。
+- 讓容器在系統中更加可控，防止影響其他應用運行。
+
+> 你可以想像 **Namespaces 是「隔離牢房」，Cgroups 是「監獄管理員」，Docker 則是「監獄」，確保每個容器都能在獨立、安全的環境中運行。**
+
+---
+
+## 總結與下一步
+
+- **Docker 提供一致的開發與部署環境，簡化開發流程，提高應用可移植性。**
+- **我們學習了 Docker 的基本概念、安裝方法，以及如何建構與運行一個 Todo App 容器。**
+- **下一步，我們將學習 Docker Compose、Swarm、Stack，並結合雲端原生架構，讓應用程式能夠輕鬆進行大規模部署！🚀**

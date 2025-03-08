@@ -1,0 +1,170 @@
+---
+title: Git 版本控制與 SSH 設定
+icon: GitBranch
+---
+
+## 為什麼需要 Git？
+
+Git 是現代開發流程中不可或缺的工具，能夠幫助開發者進行版本管理、團隊協作，並追蹤程式碼變更。
+
+使用 Git，你可以：
+
+- 在多人協作時確保程式碼變更不會互相覆蓋。
+- 隨時回溯到過去的程式碼版本，避免錯誤影響整個專案。
+- 在開發新功能時創建分支（Branch），不影響主要程式碼。
+
+---
+
+## Git 基本概念
+
+### Repository（儲存庫）
+
+Repository 是 Git 中的基本單位，用於存儲程式碼、歷史記錄、分支等。
+
+### Commit（提交）
+
+Commit 是對程式碼變更的一次快照，每次 Commit 都會記錄變更的內容、作者、時間等資訊。
+
+### Branch（分支）
+
+Branch 是 Git 中用於開發新功能或修復 Bug 的分支，可以獨立於主要程式碼進行開發。
+
+### Merge（合併）
+
+Merge 是將不同分支的程式碼合併到一起，通常用於將新功能合併到主要程式碼。
+
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+
+<Accordions>
+  <Accordion title="Git 運作原理？">
+    Git 的核心運作原理是透過 **快照（snapshot）**
+    來管理版本，而非傳統的差異儲存（delta-based）。每次提交（commit），Git
+    會記錄所有文件的完整快照，若文件未變更，則只存儲指向先前版本的指標。這些快照存放於
+    `.git/objects` 目錄中，以
+    **Blob（文件內容）、Tree（目錄結構）、Commit（版本記錄）**
+    三種物件組成，並透過 **SHA-1 雜湊值** 來唯一識別與驗證完整性。此外，Git 採用
+    **分支（branch）與指標（HEAD）**
+    來管理不同版本，使其能夠高效進行版本控制、合併與回溯。這種基於快照的架構確保
+    Git 具備高效能、可靠性及分散式協作的能力。
+
+可以把 Git 想像成一台 **智慧型時光相機**，每次按下「快門」（commit），它不只是拍攝變更的部分，而是完整記錄整個場景（所有檔案的狀態）。如果某個地方沒有變化，Git 會聰明地不重複存照片，而是標註「這部分跟之前的一樣」。這些照片（快照）會存在一個 **時光相簿**（`.git` 資料夾），每張照片都有一個 **獨特的指紋**（SHA-1 雜湊值）來確保沒人偷偷篡改。而 **相簿的目錄**（Tree）則幫助我們快速找到不同時間點的內容，**時間軸（Commit 歷史）** 讓我們可以自由回到過去、合併不同的照片集（分支），甚至創造新的發展路線。這就是為什麼 Git 能夠高效管理版本，讓開發者隨時「回溯歷史」或「探索不同未來」！
+
+  </Accordion>
+</Accordions>
+---
+
+## 安裝 Git
+
+### Windows
+
+1. 下載 Git：[Git 官網](https://git-scm.com/download/win)
+2. 安裝時選擇預設設定，確保安裝 **Git Bash**。
+3. 安裝完成後，打開命令提示字元 (cmd) 或 Git Bash，輸入以下命令確認安裝成功：
+   ```bash
+   git --version
+   ```
+   若成功顯示 Git 版本號，表示安裝成功。
+
+### Mac
+
+1. 打開 Terminal，輸入：
+   ```bash
+   brew install git
+   ```
+2. 確認安裝成功：
+   ```bash
+   git --version
+   ```
+
+### Linux (Ubuntu/Debian)
+
+1. 更新系統套件庫並安裝 Git：
+   ```bash
+   sudo apt update && sudo apt install git
+   ```
+2. 確認安裝成功：
+   ```bash
+   git --version
+   ```
+
+---
+
+## 設定 Git
+
+1. 設定使用者名稱與電子郵件（這將用於 Git Commit 記錄）：
+
+   ```bash
+   git config --global user.name "你的名稱"
+   git config --global user.email "你的Email"
+   ```
+
+   > **這些資訊將記錄在每次 Commit 中，方便團隊識別變更來源。**
+
+2. 確認設定是否生效：
+   ```bash
+   git config --list
+   ```
+
+---
+
+## 設定 SSH 金鑰與 GitHub 連接
+
+### 為什麼需要 SSH？
+
+當你在本地端開發時，經常需要將程式碼推送到 GitHub，我們稱 GitHub 為遠端儲存庫（Remote Repository）。GitHub 提供兩種連接方式：HTTPS 與 SSH。HTTPS 是一種基於 HTTP 的安全傳輸協議，需要每次推送程式碼時輸入 GitHub 帳號密碼，在一般電腦上使用是安全的，因為密碼會被儲存在密碼管理器中。但在 CI/CD 等自動化流程、雲端環境中，需要不斷地輸入密碼，這樣不僅不安全，也不方便。
+
+相較之下，SSH（Secure Shell）金鑰可以提供更安全、更方便的連接方式。SSH 是一種加密通訊協議，在連接時會使用金鑰對來驗證身份，不需要每次輸入密碼，因此更適合用於自動化流程與雲端環境。
+
+在這次課程中，我們將使用 SSH 金鑰來連接 GitHub，這讓我們在下一次課程時的雲原生應用部署更加方便，總之先來設定 SSH 金鑰吧！
+
+---
+
+## 生成 SSH 金鑰
+
+1. 在終端機輸入以下指令：
+
+   ```bash
+   ssh-keygen -t rsa -b 4096 -C "你的Email"
+   ```
+
+   - `-t rsa`：使用 RSA 演算法。
+   - `-b 4096`：設定金鑰長度為 4096 位元，提高安全性。
+   - `-C "你的Email"`：附加 Email 註解，便於識別金鑰用途。
+
+2. 當出現 **「Enter file in which to save the key」** 時，可直接按 **Enter**，使用預設位置 `~/.ssh/id_rsa`。
+
+3. 設定 SSH 金鑰的密碼（可選）。
+
+---
+
+## 添加 SSH 金鑰到 GitHub
+
+1. 取得 SSH 公鑰：
+   ```bash
+   cat ~/.ssh/id_rsa.pub
+   ```
+2. 複製終端機輸出的公鑰內容。
+3. 進入 [GitHub SSH 設定頁面](https://github.com/settings/keys)。
+4. 點擊 **New SSH Key**，輸入一個名稱，並貼上剛剛複製的公鑰，然後點擊 **Add SSH Key**。
+
+---
+
+## 測試 SSH 連線
+
+輸入以下指令測試是否成功連接 GitHub：
+
+```bash
+ssh -T git@github.com
+```
+
+若顯示以下訊息，則表示 SSH 設定成功！
+
+```bash
+Hi <your-username>! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+> 你可以想像 SSH 私鑰就像是一把「鑰匙」，而公鑰就是「鎖」。當你將公鑰放在 GitHub 上，就像是在 GitHub 的門上裝了一把鎖，只有持有對應私鑰的人才能打開這扇門。這樣一來，你就可以安全地推送程式碼到 GitHub，而不用擔心密碼外洩的問題。
+
+---
+
+這些步驟將確保你的開發環境已經準備就緒，能夠順利開始專案開發與版本管理！ 🚀

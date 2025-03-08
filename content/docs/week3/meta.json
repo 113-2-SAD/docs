@@ -1,0 +1,7 @@
+{
+  "root": true,
+  "title": "Week 3",
+  "description": "Week 3",
+  "icon": "Dice3",
+  "pages": ["index", "getting-started"]
+}
