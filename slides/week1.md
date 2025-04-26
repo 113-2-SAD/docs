@@ -16,16 +16,20 @@ paginate: true
 根據學期初的表單回饋，我們將著重於軟體開發流程、系統設計、DevOps 概念。
 
 ---
+
 ### Week 1（今天）
+
 - **Git 版本控制**、**Docker 容器化**、**自動化測試** 與 **CI/CD** 的基礎。
 - 安裝與實作 Todo App，理解 **DevOps** 核心概念。
 
 ### Week 2
+
 - **Docker Compose**：多容器管理，自動化前後端資料庫 CI/CD。
 - **雲端原生架構**：使用工作站部署實作。
 - 帶大家操作管理虛擬機伺服器，假裝是個 IT 工程師。
-  
+
 ### Week 3
+
 - **資料庫選型**：介紹各種不同的資料庫，帶大家理解技術選型與架構設計的大概念
 - **OpenAPI**：API 文件自動化生成，現代化 API 開發流程與 Best Practices
 - 實作基本的 API 文件，並使用 Postman 測試 API
@@ -33,6 +37,7 @@ paginate: true
 ---
 
 ## Week 1 課程大綱
+
 - **環境準備**：安裝必要工具與軟體
 - 從以 Todo app 為例，帶大家透過實際操作 Git、GitHub、Docker、Playwright、CI/CD 等工具理解 DevOps 的流程與概念
 
@@ -54,6 +59,7 @@ paginate: true
 ---
 
 ## Node.js?
+
 Node.js 是一個開源的 JavaScript 「執行環境」，讓我們可以在伺服器端（Server Side）運行 JavaScript 程式碼。
 
 過去我們只能在瀏覽器上運行 JavaScript，而 Node.js 就是讓我們可以「執行」 JavaScript 的工具，就好像是 Python 的 `python` 指令一樣。
@@ -101,6 +107,8 @@ pnpm -v
 ---
 
 # Git
+
+<img src='git-meme.png' height=500/>
 
 ---
 
@@ -179,6 +187,7 @@ Git 採用 **快照 (snapshot)** 機制管理版本，而非傳統的差異（di
 git config --global user.name "你的名稱"
 git config --global user.email "你的Email"
 ```
+
 > Git 會使用這些資訊來標記你的提交紀錄，讓其他人知道這些變更是由誰做的。
 
 檢查：`git config --list`
@@ -187,10 +196,14 @@ git config --global user.email "你的Email"
 
 # GitHub
 
+<img src='github-meme.png' height=500/>
+
 ---
 
 ## GitHub 簡介
+
 GitHub 是一個基於 Git 的雲端儲存庫平台，提供版本控制、協作開發和社群功能。
+
 - **版本控制**：儲存與管理程式碼歷史。
 - **協作開發**：多人同時開發，透過 Pull Request 進行程式碼審查。
 - **社群功能**：問題（Issues）、Wiki、專案管理等。
@@ -204,6 +217,10 @@ GitHub 是一個基於 Git 的雲端儲存庫平台，提供版本控制、協�
 ### 為什麼使用 SSH？
 
 讓 GitHub 與本地端安全連線，避免每次推送都要輸入帳號密碼（現在 GitHub 也不支援直接輸入密碼登入了），尤其是當你使用雲端機器時。
+
+---
+
+<img src='ssh-meme.png' height=600/>
 
 ---
 
@@ -225,7 +242,6 @@ GitHub 是一個基於 Git 的雲端儲存庫平台，提供版本控制、協�
 
 ---
 
-
 ### Git Flow：分支管理實踐
 
 **Git Flow** 是一種 Git Branching Model（分支模型），是十幾年前提出的 Git 協作流程。
@@ -239,6 +255,10 @@ GitHub 是一個基於 Git 的雲端儲存庫平台，提供版本控制、協�
 - **Feature**：新功能開發分支。 **(從 Develop 分出)**
 - **Release**：準備發布的版本。 **(從 Develop 分出，用於測試與修復)**
 - **Hotfix**：緊急修復分支。 **(從 Main 分出，修復線上 Bug)**
+
+---
+
+<img src='gitflow-meme.png' height=500 />
 
 ---
 
@@ -258,11 +278,12 @@ GitHub 是一個基於 Git 的雲端儲存庫平台，提供版本控制、協�
 #### 各分支詳解 (續)
 
 - **Feature**:
+
   - 用於開發 **新功能**。
   - **必須** 從 `Develop` 分支出來。
   - 完成後 **必須** 合併回 `Develop`。
   - 命名建議：`feature/功能名稱` (e.g., `feature/user-login`)。
-> 但其實現在很多開源專案都不會限制命名規則了～
+    > 但其實現在很多開源專案都不會限制命名規則了～
 
 - **Release**:
   - 用於 **準備發布** 新版本。
@@ -271,12 +292,14 @@ GitHub 是一個基於 Git 的雲端儲存庫平台，提供版本控制、協�
   - 完成後 **同時合併** 回 `Main` (標記版本) 和 `Develop` (同步修復)。
 
 ---
+
 - **Hotfix**:
   - 用於 **緊急修復** `Main` 分支上的 Bug。
   - **必須** 從 `Main` 分支出來。
   - 完成後 **同時合併** 回 `Main` 和 `Develop`。
 
 > 以上是 Git Flow 的基本概念，實際上有些團隊會根據需求調整流程，但大致上都是這樣的運作方式就是了。
+
 ---
 
 #### 分支圖示
@@ -386,6 +409,7 @@ PM Chen 希望在 Todo App 中為每個待辦事項增加「截止日期」功�
 # 試試看吧！
 
 （詳細請參考教學文件）
+
 1. Fork Todo App 專案
 2. Clone 你的專案到本地端
 3. 從 `develop` 分支建立 `feature/your-feature-name` 分支
@@ -395,6 +419,13 @@ PM Chen 希望在 Todo App 中為每個待辦事項增加「截止日期」功�
 7. 建立 Pull Request，並指派給自己
 8. 等待自己 Code Review
 9. 合併 PR，刪除分支
+
+
+---
+
+# Docker
+
+<img src='docker-meme.png' height=500/>
 
 ---
 
@@ -458,11 +489,13 @@ Docker 是 **容器化技術**，將應用程式與依賴（Packages）打包成
   sudo systemctl enable docker
   ```
 - 測試：`docker run hello-world`
-  
+
 > 這會下載一個叫做 `hello-world` 的 Docker Image，然後使用它來啟動一個 Container，這個 Container 會顯示一個歡迎訊息，告訴你 Docker 已經安裝成功了。
 
 ---
+
 ### Docker 基本指令與 Dockerfile
+
 - **docker pull**：下載映像檔。
 - **docker run**：啟動容器。
 - **docker build**：建置映像檔。
@@ -491,7 +524,9 @@ Docker 是 **容器化技術**，將應用程式與依賴（Packages）打包成
 ---
 
 # 試試看吧！
+
 （詳細請參考教學文件）
+
 1. 運行 Todo App 的 Docker Frontend 映像檔
 2. 運行 Todo App 的 Docker Backend 映像檔
 3. 測試修改 Dockerfile 和運行指令，例如 port、環境變數等
@@ -500,14 +535,18 @@ Docker 是 **容器化技術**，將應用程式與依賴（Packages）打包成
 
 # 軟體測試
 
+<img src="test-meme.png" height=500 />
+
 ---
 
 ## 軟體測試：為什麼需要測試？
+
 - **品質保證**：確保功能正常。
 - **成本效益**：早期發現 Bug，降低維護成本。
 - **穩定性**：提升使用者體驗，減少 Bug 回報。
 
-## 測試類型
+### 測試類型
+
 - **單元測試**：測試單一功能或模組。
 - **整合測試**：測試多個模組之間的互動。
 - **端對端測試（E2E）**：模擬使用者行為，測試整體系統。
@@ -517,7 +556,7 @@ Docker 是 **容器化技術**，將應用程式與依賴（Packages）打包成
 
 ---
 
-## 軟體測試：Playwright 入門
+## 現代軟體測試介紹：Playwright 入門
 
 ### Playwright 簡介
 
@@ -557,7 +596,12 @@ test("新增待辦事項", async ({ page }) => {
 
 # DevOps
 
+<img src='devops-meme.png' height=500/>
+
+---
+
 ## DevOps 簡介
+
 - **DevOps**：開發（Development）與運營（Operations）的結合。
 - **目標**：提升軟體交付速度與品質。
 - **文化**：強調團隊合作、持續改進與自動化。
@@ -575,18 +619,19 @@ test("新增待辦事項", async ({ page }) => {
 - **CI（持續整合）**：自動測試新程式碼。
 - **CD（持續部署）**：測試通過後自動部署。
 - **DevOps 角色**：提升交付速度與品質。
-  
+
 > 過去我們軟體交付速度慢，因此手動測試、部署並沒有什麼問題，但現在我們的軟體強調是快速迭代、敏捷開發，因此我們需要自動化測試與部署的流程，這樣才能快速地交付新的功能給使用者。
 
 ---
 
-### CI/CD 流程 
+### CI/CD 流程
+
 1. 開發者提交程式碼到 Git 儲存庫（例如 Push、Pull Request 等）。
 2. 在合併前，CI 工具自動開始檢查程式碼，執行測試。
-4. 測試通過後，CI 工具會通知開發者或直接合併程式碼。
-5. 當程式碼合併到主分支後，CD 工具會自動將最新版本的應用程式部署到生產（Production）環境。
-6. 部署完成後，CD 工具會通知相關人員，並提供部署狀態報告。
-7. 若部署失敗，CD 工具會自動回滾到上個穩定版本，並通知相關人員。
+3. 測試通過後，CI 工具會通知開發者或直接合併程式碼。
+4. 當程式碼合併到主分支後，CD 工具會自動將最新版本的應用程式部署到生產（Production）環境。
+5. 部署完成後，CD 工具會通知相關人員，並提供部署狀態報告。
+6. 若部署失敗，CD 工具會自動回滾到上個穩定版本，並通知相關人員。
 
 ---
 
@@ -605,7 +650,9 @@ GitHub 提供的 CI/CD 工具：
 ---
 
 # 試試看吧！
+
 （詳細請參考教學文件）
+
 1. 在 Todo App 專案中新增 GitHub Actions Workflow
 2. 設定 CI/CD 流程
 3. 測試自動化測試與部署
@@ -629,5 +676,8 @@ GitHub 提供的 CI/CD 工具：
 
 ---
 
-# 感謝大家的參與！
+# 感謝大家聆聽！
+
 有任何問題或建議，歡迎隨時提出。
+
+記得將實作結果截圖作為點名證明哦！
