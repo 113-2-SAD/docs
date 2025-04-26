@@ -167,4 +167,48 @@ Hi <your-username>! You've successfully authenticated, but GitHub does not provi
 
 ---
 
-這些步驟將確保你的開發環境已經準備就緒，能夠順利開始專案開發與版本管理！ 🚀
+## 下載 Todo App 專案
+
+1. 進入 [Todo App 專案頁面](https://github.com/113-2-SAD/SADo)
+2. 點擊 **Fork** 按鈕，將專案複製到自己的 GitHub 帳號下。
+3. 在終端機中，使用以下指令將專案 clone 到本地端：
+   ```bash
+   git clone https://github.com/<YOUR_USERNAME>/<YOUR_REPO>.git
+   ```
+
+---
+
+
+## Git Flow：分支管理實踐
+
+### Git Flow 簡介
+（請參考課程詳細內容）
+
+### 實作
+
+4. 進入專案目錄：
+   ```bash
+   cd <YOUR_REPO>
+   ```
+5. 建立新的分支（Branch）：
+   ```bash
+   git checkout -b develop # 首先建立 develop 分支
+   git checkout -b feature/your-feature-name develop # 然後從 develop 分支建立新的功能分支
+   ```
+6. 在 `feature/your-feature-name` 分支上進行開發（隨意變更一行程式碼等），完成後提交（Commit）：
+   ```bash
+   git add . # 添加所有變更
+   git commit -m "Add your feature description" # 提交變更
+   ```
+7. 將變更推送到 GitHub：
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+8. 前往 GitHub 儲存庫頁面，點擊 **Pull Request**，選擇 `develop` 分支作為目標分支，然後點擊 **Create Pull Request**。
+9. 填寫 PR 標題與描述，並指派給自己進行 Code Review。
+10. 等待自己 Code Review，然後合併 PR。
+
+
+---
+
+這些步驟將確保你的開發環境已經準備就緒，並有基本的了解，能夠順利開始專案開發與版本管理！ 🚀

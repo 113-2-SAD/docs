@@ -5,13 +5,12 @@ export default function HomePage() {
     <main className="flex flex-1 flex-col justify-center items-center text-center px-4 max-w-4xl mx-auto py-20">
       <h1 className="mb-4 text-4xl font-bold">系統設計與分析 SAD 113-2</h1>
       <h2 className="mb-8 text-2xl text-fd-muted-foreground">
-        四週助教資訊系統開發課程
+        三週助教資訊系統開發課程
       </h2>
 
       <p className="text-lg mb-8 max-w-2xl">
-        歡迎加入這四週的實戰開發課程！接下來的幾堂課中，我們會一步步帶你從基礎到進階，體驗團隊協作、版本控制、自動化測試、Docker
-        容器化、雲端部署、資料庫選型，以及最終整合這些技術在一場小型 Hackathon
-        中，激發創意、完成專案並部署到線上。
+        歡迎加入這三週的實戰開發課程！接下來的幾堂課中，我們會一步步帶你從基礎到進階，體驗團隊協作、版本控制、自動化測試、Docker
+        容器化、雲端部署、資料庫選型。
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 w-full max-w-2xl">
@@ -22,7 +21,6 @@ export default function HomePage() {
             <li>雲端原生部署</li>
             <li>資料庫選型與實作</li>
             <li>API 設計與 OpenAPI</li>
-            <li>實戰 Hackathon</li>
           </ul>
         </div>
 
