@@ -1,6 +1,7 @@
 ---
 marp: true
 paginate: true
+footer: "系統設計與分析 SAD 113-2"
 ---
 
 # 系統設計與分析 SAD 113-2
