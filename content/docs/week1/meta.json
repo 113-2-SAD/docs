@@ -3,5 +3,5 @@
   "title": "Week 1",
   "description": "Week 1",
   "icon": "Dice1",
-  "pages": ["index", "getting-started", "git", "docker", "playwright", "github"]
+  "pages": ["index", "getting-started", "git", "docker", "test-plan", "unit-tests", "manual-tests", "e2e-tests", "github"]
 }

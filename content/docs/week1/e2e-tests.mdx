@@ -1,0 +1,398 @@
+---
+title: 端對端測試：Playwright 入門
+icon: Share
+---
+
+在前面的章節中，我們討論了單元測試和手動測試。現在，讓我們更進一步，探討軟體測試中另一個重要的環節：**端對端測試**（End-to-End Testing，簡稱 E2E）。
+
+## 什麼是端對端測試？
+
+想像一下，你辛苦開發的 Todo 應用終於上線了，但突然有使用者回報：「我新增的待辦事項不會儲存！」噢，真糟糕！這可能是前端表單處理有問題？還是後端 API？或者是資料庫連線出錯？
+
+這就是為什麼我們需要端對端測試 — 它模擬真實使用者如何與應用程式互動，從頭到尾測試整個流程，確保所有組件能協同運作。在我們的 SADo 應用中，這意味著從使用者在瀏覽器點擊「新增待辦事項」按鈕，到資料成功存入資料庫的整個過程。
+
+## 為什麼單元測試還不夠？
+
+你可能會想：「我已經有單元測試了，為什麼還需要 E2E 測試？」
+
+來看看我們的 SADo 應用：假設前端的 `addTodo` 函數和後端的 `createTodo` API 各自通過了單元測試，但當它們一起工作時呢？如果 API 回傳的資料格式與前端期望的不符，那麼即使單元測試全部通過，應用還是會出錯。
+
+這就像是餐廳的廚師和服務生 — 他們各自做得很好（通過個別的「單元測試」），但如果溝通不良，一個做出牛排、一個卻端上義大利麵，客人還是會不滿意。
+
+## 測試金字塔：平衡各類測試
+
+在建立測試策略時，我們常參考「測試金字塔」：
+
+- **底層**：單元測試 - 數量最多、執行最快、成本最低（例如測試 SADo 中的 `toggleComplete` 函數）
+- **中層**：整合測試 - 測試組件間的互動（例如測試前端與 API 的互動）
+- **頂層**：E2E 測試 - 數量最少、執行最慢，但最接近真實使用者體驗（例如測試從登入到建立待辦事項的完整流程）
+
+在 SADo 專案中，你會發現我們在 `package.json` 設定了不同的測試命令，反映了這個金字塔結構：
+
+```json
+"scripts": {
+  "test": "jest",             // 單元測試 - 快速且頻繁執行
+  "test:e2e": "playwright test" // E2E 測試 - 較慢但全面
+}
+```
+
+理想的比例可能是：70% 單元測試、20% 整合測試、10% E2E 測試。這不是硬性規定，而是根據你的專案需求調整。
+
+## 如何系統性規劃 E2E 測試？
+
+E2E 測試不是隨意點點按鈕，而是有系統的過程。讓我們看看如何從使用者故事出發，規劃 SADo 應用的 E2E 測試：
+
+### 1. 從使用者故事開始
+
+首先，我們需要明確使用者會如何使用我們的功能。例如：
+
+> 「作為使用者，我希望能夠新增待辦事項，以便追蹤我需要完成的工作。」
+
+### 2. 轉換為測試計畫
+
+接著，將使用者故事轉換為具體的測試計畫：
+
+- **測試案例**：驗證使用者能成功新增待辦事項
+- **前置條件**：SADo 應用已啟動
+- **步驟**：輸入待辦事項、點擊提交按鈕
+- **預期結果**：待辦事項出現在清單中，且保存後重新載入頁面仍然存在
+
+### 3. 實現自動化測試
+
+最後，使用 Playwright 等工具將測試計畫轉換為自動化腳本。
+
+## Playwright：現代 E2E 測試的得力助手
+
+在我們的 SADo 專案中，我們選擇了 Playwright 作為 E2E 測試工具。為什麼？
+
+- **多瀏覽器支援**：同時測試 Chrome、Firefox 和 Safari
+- **強大的等待機制**：不需手動設置等待時間，自動等待元素可交互
+- **網絡控制**：可以模擬慢速網絡、攔截請求等
+- **視覺測試**：支援截圖比對，確保 UI 一致性
+- **開發者體驗**：除錯工具、測試生成器，讓測試編寫更輕鬆
+
+而且 Playwright 由微軟開發並維護，更新頻繁，社群活躍。
+
+> **趣聞：** 很多 AI 自動化工具，如 Manus 和 Browser Use 等，底層都使用 Playwright 驅動瀏覽器！
+
+## 在 SADo 專案中設置 Playwright
+
+如果你查看 SADo 專案結構，會發現 E2E 測試位於 `apps/frontend/tests` 目錄。讓我們看看如何在專案中設置 Playwright：
+
+### 1. 安裝並設定
+
+SADo 已經配置好了 Playwright，你可以查看根目錄的 `package.json`：
+
+```json
+"devDependencies": {
+  "@playwright/test": "^1.40.0",
+  // 其他依賴...
+}
+```
+
+若要在自己的專案中設置，只需執行：
+
+```bash
+# 切換到前端目錄
+cd apps/frontend
+
+# 安裝 Playwright
+pnpm add -D @playwright/test
+
+# 下載瀏覽器引擎
+pnpm dlx playwright install
+```
+
+### 2. 配置檔案
+
+Playwright 的配置位於 `apps/frontend/playwright.config.ts`：
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  timeout: 30000,
+  use: {
+    baseURL: 'http://localhost:3000',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+  ],
+});
+```
+
+這個配置指定了測試目錄、超時設定、測試網址，以及要使用的瀏覽器。
+
+## 實戰：測試 SADo 的待辦事項功能
+
+讓我們實際測試 SADo 的核心功能 — 新增待辦事項：
+
+```typescript
+// apps/frontend/tests/todo.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('使用者能新增待辦事項', async ({ page }) => {
+  // 1. 前往 SADo 應用
+  await page.goto('/');
+  
+  // 2. 填寫待辦事項表單
+  await page.fill('[data-testid="todo-input"]', '準備系統分析與設計期末報告');
+  
+  // 3. 點擊新增按鈕
+  await page.click('[data-testid="add-todo-button"]');
+  
+  // 4. 驗證待辦事項已新增到列表
+  const todoItem = await page.waitForSelector('.todo-item');
+  expect(await todoItem.textContent()).toContain('準備系統分析與設計期末報告');
+  
+  // 5. 重新整理頁面，確認資料持久化
+  await page.reload();
+  expect(await page.textContent('.todo-item')).toContain('準備系統分析與設計期末報告');
+});
+```
+
+注意我們使用 `data-testid` 屬性來選取元素。這是個好習慣，因為它不受 CSS 樣式變化影響，使測試更穩定。在 SADo 的前端代碼中，我們特意為測試添加了這些屬性：
+
+```jsx
+// apps/frontend/src/components/TodoForm.tsx 的部分代碼
+<input
+  data-testid="todo-input"
+  value={newTodo}
+  onChange={(e) => setNewTodo(e.target.value)}
+  placeholder="新增待辦事項..."
+/>
+<button data-testid="add-todo-button" type="submit">
+  新增
+</button>
+```
+
+## Playwright 實用技巧
+
+當你在 SADo 專案中編寫 E2E 測試時，這些技巧會很有幫助：
+
+### 頁面操作
+
+```typescript
+// 導航操作
+await page.goto('/todos');
+
+// 點擊元素
+await page.click('[data-testid="complete-button"]');
+
+// 填寫表單
+await page.fill('[data-testid="todo-input"]', '完成作業');
+
+// 勾選核取方塊
+await page.check('[data-testid="completed-checkbox"]');
+```
+
+### 等待與斷言
+
+```typescript
+// 等待元素出現
+await page.waitForSelector('.todo-list');
+
+// 等待網絡請求完成
+await page.waitForResponse('**/api/todos');
+
+// 斷言文本內容
+await expect(page.locator('[data-testid="todo-item"]')).toContainText('完成作業');
+
+// 斷言元素存在與否
+await expect(page.locator('.empty-state')).not.toBeVisible();
+```
+
+### 測試多種情境
+
+在 SADo 應用中，我們還應該測試：
+
+```typescript
+// 測試標記待辦事項為已完成
+test('使用者能標記待辦事項為已完成', async ({ page }) => {
+  // 設置：先新增一個待辦事項
+  await page.goto('/');
+  await page.fill('[data-testid="todo-input"]', '閱讀系統分析教材');
+  await page.click('[data-testid="add-todo-button"]');
+  
+  // 點擊完成按鈕
+  await page.click('[data-testid="complete-button"]');
+  
+  // 驗證待辦事項已標記為完成
+  await expect(page.locator('.todo-item.completed')).toBeVisible();
+});
+
+// 測試刪除待辦事項
+test('使用者能刪除待辦事項', async ({ page }) => {
+  // 設置：先新增一個待辦事項
+  await page.goto('/');
+  await page.fill('[data-testid="todo-input"]', '準備小考');
+  await page.click('[data-testid="add-todo-button"]');
+  
+  // 獲取初始待辦事項數量
+  const initialCount = await page.locator('.todo-item').count();
+  
+  // 點擊刪除按鈕
+  await page.click('[data-testid="delete-button"]');
+  
+  // 驗證待辦事項已刪除
+  await expect(page.locator('.todo-item')).toHaveCount(initialCount - 1);
+});
+```
+
+## 高級測試技巧
+
+隨著你對 E2E 測試的熟悉，可以嘗試這些進階技巧：
+
+### 測試資料管理
+
+在 SADo 專案中，你可能想在每次測試前重置資料庫：
+
+```typescript
+// apps/frontend/tests/fixtures.ts
+async function resetDatabase() {
+  const response = await fetch('http://localhost:5000/api/test/reset', {
+    method: 'POST'
+  });
+  return response.ok;
+}
+
+// 在測試套件中使用
+test.beforeEach(async () => {
+  await resetDatabase();
+});
+```
+
+### 模擬 API 回應
+
+有時，你可能想測試 API 故障的情況：
+
+```typescript
+test('當 API 故障時顯示錯誤訊息', async ({ page }) => {
+  // 攔截 API 請求並返回錯誤
+  await page.route('**/api/todos', async route => {
+    await route.fulfill({
+      status: 500,
+      body: JSON.stringify({ message: 'Internal Server Error' })
+    });
+  });
+  
+  // 嘗試新增待辦事項
+  await page.goto('/');
+  await page.fill('[data-testid="todo-input"]', '這個不會成功');
+  await page.click('[data-testid="add-todo-button"]');
+  
+  // 驗證錯誤訊息顯示
+  await expect(page.locator('.error-message')).toBeVisible();
+  await expect(page.locator('.error-message')).toContainText('無法新增待辦事項');
+});
+```
+
+### 測試不同裝置和螢幕尺寸
+
+確保你的 SADo 應用在不同裝置上都能正常運作：
+
+```typescript
+// 在 playwright.config.ts 中設定
+projects: [
+  { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+  { name: 'mobile', use: { ...devices['iPhone 13'] } },
+];
+
+// 在測試中使用
+test('在手機上查看待辦事項列表', async ({ page }) => {
+  // 測試手機版面的特定功能
+  await page.goto('/');
+  await expect(page.locator('.mobile-menu-button')).toBeVisible();
+});
+```
+
+## 與 CI/CD 整合
+
+SADo 專案已經設置了 GitHub Actions 工作流程，實現每次推送代碼時自動執行 E2E 測試：
+
+```yaml
+# .github/workflows/e2e-tests.yml
+name: E2E Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+      - name: Install dependencies
+        run: pnpm install
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+      - name: Build app
+        run: pnpm build
+      - name: Start app
+        run: pnpm start &
+      - name: Run E2E tests
+        run: pnpm test:e2e
+```
+
+這確保了團隊成員推送的任何變更都不會破壞現有功能。
+
+## 平衡測試成本與效益
+
+編寫和維護 E2E 測試有成本，所以我們需要聰明地選擇測試內容：
+
+1. **優先測試關鍵流程**：在 SADo 中，新增、完成和刪除待辦事項是核心功能
+2. **測試常見的使用者路徑**：大多數使用者會走的路徑優先測試
+3. **選擇性測試邊界情況**：例如處理特殊字元的待辦事項
+4. **不需測試所有組合**：聰明地選擇有代表性的案例
+
+## E2E 測試的常見挑戰及解決方案
+
+### 1. 測試緩慢
+
+在 SADo 專案中，我們採用了這些策略加速測試：
+
+- **平行執行**：在 `playwright.config.ts` 中設定 `workers: '100%'`
+- **選擇性運行**：只在關鍵 PR 上運行完整測試集
+- **分層策略**：不要所有測試都是 E2E，靈活運用單元測試和整合測試
+
+### 2. 測試不穩定
+
+有時測試會隨機失敗，這可能是由於：
+
+- **非同步操作**：等待操作完成
+- **動畫效果**：等待動畫完成
+- **資源載入**：給予充足的載入時間
+
+在 SADo 中，我們使用 Playwright 的自動等待功能和明確的選擇器來減少這些問題。
+
+## 將 E2E 測試納入開發流程
+
+在我們的團隊中，E2E 測試已成為開發流程的重要一環：
+
+1. **開發新功能前**：編寫測試計畫
+2. **開發過程中**：邊寫代碼邊寫測試
+3. **提交 PR 前**：在本地運行測試確保通過
+4. **合併代碼前**：CI 自動運行測試
+5. **發布前**：執行完整的測試套件
+
+## 小結
+
+E2E 測試是現代軟體測試策略的重要組成部分，尤其對於像 SADo 這樣的全棧應用。它雖然不能取代單元測試和整合測試，但提供了一層額外的保障，確保從使用者視角看，系統是正常運作的。
+
+Playwright 作為一個功能強大且易於使用的 E2E 測試工具，讓我們能夠自信地開發和迭代 SADo 應用，不用擔心每次更改會破壞現有功能。
+
+下次當你開發新功能時，試著先從 E2E 測試的角度思考：使用者會如何使用這個功能？需要測試哪些場景？這樣的思維將幫助你設計出更好的使用者體驗和更穩健的代碼。
+
+## 延伸資源
+
+- [Playwright 官方文檔](https://playwright.dev/docs/intro)
+- [測試金字塔詳解](https://martinfowler.com/articles/practical-test-pyramid.html)
+- [PageObject 模式](https://playwright.dev/docs/pom) 
