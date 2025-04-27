@@ -6,7 +6,7 @@ footer: "系統設計與分析 SAD 113-2"
 
 # 系統設計與分析 SAD 113-2
 
-## 第 10 週課程：Todo App、Git、GitHub、Docker、Playwright、CI/CD
+## 第 11 週課程：Todo App、Git、GitHub、Docker、Playwright、CI/CD
 
 ### 助教：葉又銘、顧寬証，教授：盧信銘
 
@@ -39,7 +39,7 @@ footer: "系統設計與分析 SAD 113-2"
 
 ---
 
-## Week 1 課程大綱
+## Week 11 課程大綱
 
 - **環境準備**：安裝必要工具與軟體
 - 從以 Todo app 為例，帶大家透過實際操作 Git、GitHub、Docker、Playwright、CI/CD 等工具理解 DevOps 的流程與概念
