@@ -1,0 +1,518 @@
+---
+title: 單元測試實戰：Jest 入門
+icon: Code
+---
+
+這個章節，我們要聊聊單元測試 — 這個在軟體開發中至關重要，卻常被忽略的環節。很多同學可能會想：「我的程式能執行就好了，為什麼還需要寫測試？」但我相信，當你完成今天的學習後，會對單元測試有個全新的認識！
+
+## 為什麼需要單元測試？
+
+想像一下這個場景：你熬夜趕工，終於完成了 SADo 待辦事項應用中的「標記完成」功能。一切看起來很好，直到第二天，你發現當同時標記多個項目時，程式出現了 bug。更糟的是，你已經忘記昨晚那段複雜的邏輯是怎麼寫的了...
+
+這就是單元測試能幫上忙的時候！
+
+單元測試幫你驗證程式中最小單位（通常是函數或方法）的功能是否符合預期。一旦有了測試，你就能安心地修改程式碼，因為測試會告訴你：「嘿，小心！你的改動破壞了某些功能！」
+
+## SADo 專案中的單元測試
+
+在 SADo 專案中，我們使用 Jest 作為單元測試框架。如果你查看專案結構，會發現測試檔案通常放在與被測試代碼相同的目錄中，並以 `.test.ts` 或 `.spec.ts` 為後綴：
+
+```
+apps/frontend/src/utils/todoUtils.ts        # 主要程式碼
+apps/frontend/src/utils/todoUtils.test.ts   # 對應的測試
+```
+
+## Jest：JavaScript 測試的得力助手
+
+[Jest](https://jestjs.io/) 是由 Facebook 開發的 JavaScript 測試框架，在前端社群中非常流行。SADo 專案使用 Jest 的原因很簡單：
+
+- **零配置**：幾乎不需要複雜設定就能開始測試
+- **內建豐富功能**：斷言、模擬、覆蓋率報告，一應俱全
+- **隔離環境**：每個測試在獨立環境執行，避免互相干擾
+- **並行執行**：加速測試過程
+- **優秀的開發體驗**：清晰的錯誤訊息和互動式監視模式
+
+## 從零開始：SADo 專案的測試設置
+
+SADo 專案已經配置好了 Jest。你可以在根目錄的 `package.json` 中看到相關設定：
+
+```json
+{
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.5"
+    // 其他依賴...
+  }
+}
+```
+
+如果你想在自己的專案中設置 Jest，只需執行：
+
+```bash
+# 安裝 Jest 和類型定義
+pnpm add -D jest @types/jest
+
+# 對於 TypeScript 專案，還需要
+pnpm add -D ts-jest
+```
+
+## 第一個單元測試：測試 Todo 功能
+
+讓我們看看 SADo 專案中一個實際的單元測試範例。假設我們有一個 `todoUtils.ts` 檔案，包含處理待辦事項的函數：
+
+```typescript
+// apps/frontend/src/utils/todoUtils.ts
+
+// 新增待辦事項
+export function addTodo(todos, text) {
+  if (!text.trim()) return todos;
+  return [...todos, { id: Date.now(), text, completed: false }];
+}
+
+// 標記待辦事項為完成/未完成
+export function toggleTodo(todos, id) {
+  return todos.map(todo => 
+    todo.id === id ? { ...todo, completed: !todo.completed } : todo
+  );
+}
+
+// 刪除待辦事項
+export function deleteTodo(todos, id) {
+  return todos.filter(todo => todo.id !== id);
+}
+```
+
+現在，我們為這些函數編寫測試：
+
+```typescript
+// apps/frontend/src/utils/todoUtils.test.ts
+import { addTodo, toggleTodo, deleteTodo } from './todoUtils';
+
+describe('Todo 功能測試', () => {
+  
+  // 測試新增待辦事項功能
+  test('能新增有效的待辦事項', () => {
+    const initialTodos = [];
+    const newTodos = addTodo(initialTodos, '完成系統分析作業');
+    
+    expect(newTodos.length).toBe(1);
+    expect(newTodos[0].text).toBe('完成系統分析作業');
+    expect(newTodos[0].completed).toBe(false);
+  });
+  
+  test('不能新增空白的待辦事項', () => {
+    const initialTodos = [];
+    const newTodos = addTodo(initialTodos, '   ');
+    
+    expect(newTodos).toEqual(initialTodos);
+  });
+  
+  // 測試標記完成功能
+  test('能標記待辦事項為已完成', () => {
+    const initialTodos = [
+      { id: 1, text: '讀書', completed: false }
+    ];
+    const updatedTodos = toggleTodo(initialTodos, 1);
+    
+    expect(updatedTodos[0].completed).toBe(true);
+  });
+  
+  // 測試刪除功能
+  test('能刪除待辦事項', () => {
+    const initialTodos = [
+      { id: 1, text: '讀書', completed: false },
+      { id: 2, text: '寫作業', completed: false }
+    ];
+    const updatedTodos = deleteTodo(initialTodos, 1);
+    
+    expect(updatedTodos.length).toBe(1);
+    expect(updatedTodos[0].id).toBe(2);
+  });
+});
+```
+
+看到測試是怎麼運作的了嗎？我們針對每個函數，測試了它在不同情況下的行為，並使用 Jest 的斷言 API 來驗證結果是否符合預期。
+
+## Jest 測試結構解析
+
+讓我們拆解一下 Jest 測試的基本結構：
+
+1. **`describe`** - 測試套件，用於組織相關的測試案例
+   ```typescript
+   describe('Todo 功能測試', () => {
+     // 多個相關的測試案例
+   });
+   ```
+
+2. **`test`** (或 `it`) - 單個測試案例，描述期望的行為
+   ```typescript
+   test('能新增有效的待辦事項', () => {
+     // 測試邏輯
+   });
+   ```
+
+3. **`expect`** - 斷言函數，用於驗證結果
+   ```typescript
+   expect(newTodos.length).toBe(1);
+   ```
+
+## Jest 常用斷言
+
+Jest 提供了豐富的斷言 API，讓你能夠以各種方式驗證結果：
+
+```typescript
+// 精確相等 (===)
+expect(result).toBe(5);
+
+// 深度相等（適用於物件和陣列）
+expect(result).toEqual({ name: '小明' });
+
+// 真假值
+expect(result).toBeTruthy();
+expect(result).toBeFalsy();
+
+// 數字比較
+expect(count).toBeGreaterThan(3);
+expect(price).toBeLessThanOrEqual(100);
+
+// 包含檢查
+expect(['蘋果', '香蕉']).toContain('蘋果');
+expect('Hello World').toMatch(/Hello/);
+
+// 例外處理
+expect(() => throwErrorFunction()).toThrow();
+```
+
+實際上，這些斷言是你在測試中最常用的工具，幫助你精確地驗證程式的行為。
+
+## 使用 Jest 模擬（Mock）功能
+
+在 SADo 專案中，前端需要呼叫後端 API。如何測試這種情況？我們不希望真的發出網路請求，這會使測試變慢且不穩定。這時，模擬（Mock）就派上用場了！
+
+假設我們有個 `todoService.ts` 檔案，負責與後端通訊：
+
+```typescript
+// apps/frontend/src/services/todoService.ts
+export async function fetchTodos() {
+  const response = await fetch('/api/todos');
+  if (!response.ok) throw new Error('Failed to fetch todos');
+  return response.json();
+}
+
+export async function createTodo(text) {
+  const response = await fetch('/api/todos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
+  if (!response.ok) throw new Error('Failed to create todo');
+  return response.json();
+}
+```
+
+我們可以這樣測試它：
+
+```typescript
+// apps/frontend/src/services/todoService.test.ts
+import { fetchTodos, createTodo } from './todoService';
+
+// 模擬全局 fetch 函數
+global.fetch = jest.fn();
+
+describe('Todo Service 測試', () => {
+  
+  beforeEach(() => {
+    // 在每個測試前重置模擬
+    jest.resetAllMocks();
+  });
+  
+  test('fetchTodos 成功時返回資料', async () => {
+    // 準備模擬回應
+    const mockResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValue([
+        { id: 1, text: '完成作業', completed: false }
+      ])
+    };
+    global.fetch.mockResolvedValue(mockResponse);
+    
+    // 執行測試
+    const result = await fetchTodos();
+    
+    // 驗證結果
+    expect(global.fetch).toHaveBeenCalledWith('/api/todos');
+    expect(result).toEqual([
+      { id: 1, text: '完成作業', completed: false }
+    ]);
+  });
+  
+  test('createTodo 發送正確的請求', async () => {
+    // 準備模擬回應
+    const mockResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValue({ id: 2, text: '讀書', completed: false })
+    };
+    global.fetch.mockResolvedValue(mockResponse);
+    
+    // 執行測試
+    await createTodo('讀書');
+    
+    // 驗證是否發送了正確的請求
+    expect(global.fetch).toHaveBeenCalledWith('/api/todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: '讀書' })
+    });
+  });
+  
+  test('fetchTodos 失敗時拋出錯誤', async () => {
+    // 準備失敗的模擬回應
+    const mockResponse = { ok: false };
+    global.fetch.mockResolvedValue(mockResponse);
+    
+    // 驗證拋出的錯誤
+    await expect(fetchTodos()).rejects.toThrow('Failed to fetch todos');
+  });
+});
+```
+
+在這個例子中，我們使用 `jest.fn()` 創建了模擬函數，替換了真實的 `fetch` 呼叫。這使我們能夠:
+
+1. 控制函數的返回值
+2. 監控函數是否被呼叫，以及呼叫時的參數
+3. 測試錯誤處理邏輯
+
+## 測試非同步程式碼
+
+在 SADo 這樣的現代應用中，非同步操作隨處可見。Jest 讓測試非同步程式碼變得簡單：
+
+### 使用 async/await
+
+這是最直觀的方法：
+
+```typescript
+test('非同步加載待辦事項', async () => {
+  const todos = await fetchTodos();
+  expect(todos.length).toBeGreaterThan(0);
+});
+```
+
+### 使用 Promise
+
+也可以直接返回一個 Promise：
+
+```typescript
+test('非同步加載待辦事項', () => {
+  return fetchTodos().then(todos => {
+    expect(todos.length).toBeGreaterThan(0);
+  });
+});
+```
+
+### 測試被拒絕的 Promise
+
+測試錯誤情況也很重要：
+
+```typescript
+test('處理 API 錯誤', async () => {
+  // 安排 API 失敗
+  apiFailureMock();
+  
+  // 驗證錯誤被正確處理
+  await expect(fetchTodos()).rejects.toThrow('Failed to fetch');
+});
+```
+
+## 測試 React 組件
+
+在 SADo 專案中，前端使用 React。如何測試 React 組件？
+
+我們可以使用 Jest 搭配 React Testing Library，這在 SADo 專案中已經配置好了：
+
+```typescript
+// apps/frontend/src/components/TodoItem.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import TodoItem from './TodoItem';
+
+describe('TodoItem 組件', () => {
+  const mockTodo = { id: 1, text: '完成測試', completed: false };
+  const mockToggle = jest.fn();
+  const mockDelete = jest.fn();
+  
+  test('正確渲染待辦事項', () => {
+    render(
+      <TodoItem 
+        todo={mockTodo}
+        onToggle={mockToggle}
+        onDelete={mockDelete}
+      />
+    );
+    
+    // 確認文本正確顯示
+    expect(screen.getByText('完成測試')).toBeInTheDocument();
+    
+    // 確認未完成狀態正確顯示
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
+  
+  test('點擊切換按鈕時調用 onToggle', () => {
+    render(
+      <TodoItem 
+        todo={mockTodo}
+        onToggle={mockToggle}
+        onDelete={mockDelete}
+      />
+    );
+    
+    // 點擊複選框
+    fireEvent.click(screen.getByRole('checkbox'));
+    
+    // 確認 onToggle 被調用，並傳入正確的 id
+    expect(mockToggle).toHaveBeenCalledWith(1);
+  });
+  
+  test('點擊刪除按鈕時調用 onDelete', () => {
+    render(
+      <TodoItem 
+        todo={mockTodo}
+        onToggle={mockToggle}
+        onDelete={mockDelete}
+      />
+    );
+    
+    // 點擊刪除按鈕
+    fireEvent.click(screen.getByText('刪除'));
+    
+    // 確認 onDelete 被調用，並傳入正確的 id
+    expect(mockDelete).toHaveBeenCalledWith(1);
+  });
+});
+```
+
+React Testing Library 鼓勵以使用者的視角測試組件，關注「使用者能看到什麼」和「能做什麼操作」，而不是測試組件的內部實現。
+
+## 執行測試
+
+在 SADo 專案中，有多種方式運行測試：
+
+```bash
+# 運行所有測試
+pnpm test
+
+# 監視模式：當檔案變更時自動執行測試
+pnpm test -- --watch
+
+# 只測試特定檔案
+pnpm test -- src/utils/todoUtils.test.ts
+
+# 只運行名稱匹配特定模式的測試
+pnpm test -- -t "新增待辦事項"
+```
+
+## 測試覆蓋率：你測試了多少程式碼？
+
+測試覆蓋率是衡量測試完整性的重要指標。SADo 專案配置了覆蓋率報告：
+
+```bash
+# 生成覆蓋率報告
+pnpm test -- --coverage
+```
+
+這會顯示一個報告，告訴你：
+
+- **語句覆蓋率（Statement Coverage）**：有多少程式語句被執行了
+- **分支覆蓋率（Branch Coverage）**：有多少條件分支（如 if 語句）被測試了
+- **函數覆蓋率（Function Coverage）**：有多少函數被呼叫了
+- **行覆蓋率（Line Coverage）**：有多少程式碼行被執行了
+
+理想情況下，關鍵業務邏輯的覆蓋率應該接近 100%。但追求完美覆蓋率可能適得其反 — 重點是測試有意義的部分，而不是為了覆蓋率而測試。
+
+## 測試驅動開發（TDD）
+
+你聽說過測試驅動開發（Test-Driven Development, TDD）嗎？這是一種開發方法，遵循「紅-綠-重構」的循環：
+
+1. **紅**：先寫一個失敗的測試
+2. **綠**：實現最簡單的程式碼使測試通過
+3. **重構**：改進程式碼，保持測試通過
+
+例如，如果我們要實現一個新功能「篩選待辦事項」，TDD 流程可能是：
+
+```typescript
+// 1. 先寫測試
+test('能篩選已完成的待辦事項', () => {
+  const todos = [
+    { id: 1, text: '讀書', completed: true },
+    { id: 2, text: '寫作業', completed: false }
+  ];
+  
+  const filtered = filterTodos(todos, 'completed');
+  
+  expect(filtered.length).toBe(1);
+  expect(filtered[0].id).toBe(1);
+});
+
+// 2. 實現功能使測試通過
+function filterTodos(todos, filter) {
+  if (filter === 'completed') {
+    return todos.filter(todo => todo.completed);
+  }
+  if (filter === 'active') {
+    return todos.filter(todo => !todo.completed);
+  }
+  return todos; // 'all' filter
+}
+
+// 3. 重構（如果需要）
+```
+
+TDD 幫助你專注於需求，並確保所有程式碼都有測試覆蓋。
+
+## 單元測試的最佳實踐
+
+在 SADo 專案中，我們遵循這些測試原則：
+
+1. **測試行為，而非實現**：關注函數做什麼，而不是怎麼做
+2. **一個測試只測一件事**：每個測試應該有明確的目的
+3. **使用有意義的命名**：從測試名稱就能理解測試內容
+4. **安排-執行-斷言**：遵循這個結構組織測試程式碼
+5. **測試邊界條件**：空值、異常情況和極端值都應測試
+6. **保持測試獨立**：一個測試不應依賴另一個測試
+7. **避免測試私有實現細節**：只測試公開 API
+
+例如，在測試 `addTodo` 函數時，我們不僅測試了正常情況（成功新增），還測試了邊界情況（空白輸入）。
+
+## 單元測試的好處
+
+通過在 SADo 專案中實踐單元測試，我們體會到了這些好處：
+
+1. **提早發現 Bug**：測試能在開發過程中就發現問題
+2. **增強重構信心**：有了測試保障，重構代碼變得安全
+3. **作為文檔**：測試展示了函數的用法和預期行為
+4. **促進良好設計**：可測試的程式碼通常有更好的設計
+5. **更快的開發速度**：長期來看，測試能減少除錯時間
+
+## 實際應用：來自 SADo 專案的經驗
+
+在 SADo 專案開發過程中，我們發現單元測試特別有幫助的幾個場景：
+
+1. **重構複雜邏輯**：當我們需要重構 Todo 批量操作的邏輯時，測試確保了功能正常
+2. **修復 Bug**：對於每個 Bug，我們先寫一個能重現問題的測試，然後修復它
+3. **團隊協作**：新成員可以透過測試快速了解程式的行為
+4. **防止回歸**：當多人同時修改程式時，CI 自動執行測試，確保變更不會破壞現有功能
+
+## 小結
+
+單元測試不僅是一種技術實踐，更是一種開發思維。通過編寫測試，你不僅能確保程式功能正確，還能養成思考邊界情況、預期行為和代碼結構的習慣。
+
+在 SADo 專案中，我們看到了單元測試如何幫助我們建立穩健的應用。雖然寫測試需要額外時間，但這個投資會以更少的 Bug、更容易維護的程式碼，以及更快的開發速度回報給我們。
+
+希望通過今天的學習，你能在自己的專案中開始實踐單元測試，體會「測試驅動」的樂趣！
+
+## 延伸閱讀
+
+- [Jest 官方文檔](https://jestjs.io/docs/getting-started)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- [測試驅動開發實戰](https://kentcdodds.com/blog/write-tests) 
