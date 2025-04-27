@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - my_network
+    platform: linux/amd64
+
+networks:
+  my_network:
+    name: my_network
+    driver: bridge
