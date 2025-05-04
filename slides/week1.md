@@ -563,6 +563,10 @@ Docker 是 **容器化技術**，將應用程式與依賴（Packages）打包成
 
 ---
 
+<img src='test-meme.png' height=500/>
+
+---
+
 ### 測試類型
 
 | 測試類型              | 說明                           |
