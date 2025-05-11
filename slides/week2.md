@@ -61,6 +61,29 @@ Git 版本控制與 GitHub 協作, Docker 基礎：Dockerfile, Image, Container,
 
 ---
 
+## Commit Message 最佳實踐
+
+| Type | 說明 | 範例 |
+| --- | --- | --- |
+| feat | 新增/修改功能 (feature) | feat: add user registration |
+| fix | 修補 bug (bug fix) | fix: resolve login error on Safari |
+| docs | 文件修改 (documentation) | docs: update API endpoints in README |
+| style | 格式調整 (不影響程式碼運行) | style: format code and add semicolons |
+
+---
+
+## Commit Message 最佳實踐（續）
+
+| Type | 說明 | 範例 |
+| --- | --- | --- |
+| refactor | 重構 (既不是新增功能，也不是修補 bug) | refactor: simplify authentication logic |
+| perf | 改善效能 | perf: optimize database queries |
+| test | 增加測試 | test: add unit tests for auth service |
+| chore | 建構程序或輔助工具的變動 | chore: update webpack configuration |
+| revert | 撤銷回覆先前的 commit | revert: feat: user profile page (回覆版本: a1b2c3d) |
+
+---
+
 ## Git 使用情境
 
 小明是一位開發者，今天他要為 Todo App 新增「使用者註冊」功能。
