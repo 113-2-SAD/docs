@@ -234,15 +234,17 @@ docker-compose up -d
 # 啟動一個本地 Registry
 docker run -d -p 5000:5000 --name registry registry:2
 
-# 標記映像檔指向本地 Registry
-docker tag todo-app:1.0 localhost:5000/todo-app:1.0
+# 標記映像檔指向本地 Registry（frontend, backend 要分開執行喔！）
+docker tag sado:1.0 localhost:5000/sado-{frontend,backend}:1.0
 
 # 推送到本地 Registry
-docker push localhost:5000/todo-app:1.0
+docker push localhost:5000/sado-{frontend,backend}:1.0
 
 # 從本地 Registry 拉取映像檔
-docker pull localhost:5000/todo-app:1.0
+docker pull localhost:5000/sado-{frontend,backend}:1.0
 ```
+
+
 
 ## 在不同環境中使用映像檔
 
@@ -251,19 +253,19 @@ docker pull localhost:5000/todo-app:1.0
 1. **使用環境變數**：相同映像檔，不同環境變數
    ```bash
    # 開發環境
-   docker run -e NODE_ENV=development -e API_URL=http://dev-api yourusername/todo-app:1.0
+   docker run -e NODE_ENV=development -e API_URL=http://dev-api yourusername/sado:1.0
    
    # 生產環境
-   docker run -e NODE_ENV=production -e API_URL=http://prod-api yourusername/todo-app:1.0
+   docker run -e NODE_ENV=production -e API_URL=http://prod-api yourusername/sado:1.0
    ```
 
 2. **使用特定環境映像檔**：為每個環境創建專用映像檔
    ```bash
    # 構建開發環境映像檔
-   docker build -t yourusername/todo-app:dev --build-arg ENV=development .
+   docker build -t yourusername/sado:dev --build-arg ENV=development .
    
    # 構建生產環境映像檔
-   docker build -t yourusername/todo-app:prod --build-arg ENV=production .
+   docker build -t yourusername/sado:prod --build-arg ENV=production .
    ```
 
 3. **使用 docker-compose 配置多環境**：
