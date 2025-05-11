@@ -141,14 +141,10 @@ scp -r /path/to/local/directory username@sand.lu.im.ntu.edu.tw:/path/to/remote/d
 5. **防火牆**：如 UFW、iptables，用於網路安全
 6. **監控工具**：如 Prometheus、Grafana，用於系統監控
 
-### NTUIM workshop 伺服器
 
-這是本課程提供的測試環境，我們將在此伺服器上進行實際部署操作。此伺服器具有以下特點：
+## 使用 SSH 部署 Docker 應用程式
 
-- Ubuntu Server 作業系統
-- 已預先安裝 Docker 和 Docker Compose
-- 可以通過 SSH 遠端登入
-- 支援多用戶同時使用，需特別注意服務端口的使用和權限管理
+現在我們將手把手教你如何通過 SSH 將我們的 SADo Todo App 部署到遠端伺服器，並能通過網路訪問。
 
 <Callout type="action">
 為了讓同學們體驗 SSH 遠端操作，教學團隊準備了一台 VM (Virtual Machine)，每組都有專屬的帳號可以使用喔！
@@ -156,13 +152,10 @@ scp -r /path/to/local/directory username@sand.lu.im.ntu.edu.tw:/path/to/remote/d
 主機資訊：
 - Domain: `sand.lu.im.ntu.edu.tw`
 - IP: `140.112.106.148`
+- OS: Ubuntu
 
 > 感謝 盧信銘 老師 慷慨贊助
 </Callout>
-
-## 使用 SSH 部署 Docker 應用程式
-
-現在我們將手把手教你如何通過 SSH 將我們的 SADo Todo App 部署到遠端伺服器，並能通過網路訪問。
 
 ### 部署策略
 
