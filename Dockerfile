@@ -44,7 +44,7 @@ COPY --from=builder /app/.next/static ./.next/static
 
 # Copy public assets. In standalone mode, Next.js copies the project's
 # public directory into .next/standalone/public during the build.
-COPY --from=builder /app/.next/standalone/public ./public
+# COPY --from=builder /app/.next/standalone/public ./public
 
 EXPOSE 3000
 CMD ["node", "server.js"]
