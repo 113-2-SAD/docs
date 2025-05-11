@@ -1,0 +1,406 @@
+---
+title: SSH 與遠端部署操作
+description: 學習使用 SSH 進行遠端伺服器部署
+icon: Terminal
+---
+
+在開發完應用程式後，通常需要將其部署到伺服器上以供使用。本單元將介紹如何通過 SSH 連接遠端伺服器，並將 Docker 容器化的應用程式部署到伺服器上。
+
+## 從本地到雲端：為什麼要部署到伺服器？
+
+我們的應用程式現在可以在本機用 Docker Compose 順利執行了。但...
+- 只有你自己能用。
+- 如果關掉電腦，服務就停了。
+- 如何讓其他人 (例如：使用者、團隊成員) 也能存取？
+
+**答案：將應用程式部署到一台公開的伺服器上！**
+
+## 簡介雲端原生 (Cloud Native)
+
+**雲端原生 (Cloud Native)** 是一種建構和執行應用程式的方法，旨在充分利用雲端運算環境的優勢，實現快速、可靠、可擴展的應用程式交付。
+
+### 核心概念與目標
+- **容器化 (Containers)**：如 Docker，提供標準化的封裝與執行環境。
+- **微服務 (Microservices)**：將應用拆分為小型、獨立、可獨立部署的服務。
+- **持續整合/持續交付 (CI/CD)**：自動化建置、測試、部署流程。
+- **DevOps 文化**：強調開發與維運團隊的協作、溝通與共同責任。
+- **目標**：提升敏捷性 (Agility)、可擴展性 (Scalability)、彈性 (Resilience)、可觀測性 (Observability)。
+
+### 更廣闊的雲原生生態 (未來展望)
+- **容器編排 (Orchestration)**：如 Kubernetes，自動化容器的部署、擴展、管理。
+- **服務網格 (Service Mesh)**：如 Istio, Linkerd，管理服務間通訊、安全、監控。
+- **無伺服器 (Serverless)**：如 AWS Lambda, Azure Functions，專注於程式碼邏輯，無需管理底層伺服器。
+
+> 今天，我們將體驗「雲端原生」中最基礎的一步：**將我們的容器化應用部署到一台遠端伺服器上**。
+
+## SSH 基本概念
+
+SSH (Secure Shell) 是一種加密的網路協議，用於在不安全的網路上安全地執行遠端登入和其他安全網路服務。
+
+### SSH 的主要優勢
+
+- **安全性**：通過加密保護通信內容
+- **身份驗證**：支持公鑰/私鑰驗證機制
+- **端口轉發**：能夠建立安全的通道
+- **檔案傳輸**：支持 SCP 或 SFTP 協議進行檔案傳輸
+
+## SSH 金鑰對設置
+
+SSH 金鑰對由公鑰 (public key) 和私鑰 (private key) 組成，是一種比密碼更安全、更方便的身份驗證方式。
+
+### 生成 SSH 金鑰對
+
+```bash
+# 生成新的 SSH 金鑰對
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# 過程中會詢問儲存位置和是否設置密碼
+# 通常私鑰保存在 ~/.ssh/id_rsa
+# 公鑰保存在 ~/.ssh/id_rsa.pub
+```
+
+### 將公鑰添加到伺服器
+
+```bash
+# 方法 1: 使用 ssh-copy-id 工具
+ssh-copy-id username@sand.lu.im.ntu.edu.tw
+
+# 方法 2: 手動複製公鑰內容
+cat ~/.ssh/id_rsa.pub | ssh username@sand.lu.im.ntu.edu.tw "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+
+## 基本 SSH 指令
+
+### 連接到遠端伺服器
+
+```bash
+# 基本連接
+ssh username@sand.lu.im.ntu.edu.tw
+
+# 指定端口
+ssh -p port_number username@sand.lu.im.ntu.edu.tw
+
+# 使用特定私鑰
+ssh -i /path/to/private_key username@sand.lu.im.ntu.edu.tw
+```
+
+### 執行遠端命令
+
+```bash
+# 直接執行命令而不登入
+ssh username@sand.lu.im.ntu.edu.tw "command_to_execute"
+
+# 例如，檢查伺服器上的 Docker 狀態
+ssh username@sand.lu.im.ntu.edu.tw "docker ps"
+```
+
+### 檔案傳輸
+
+```bash
+# 從本地複製到遠端
+scp /path/to/local/file username@sand.lu.im.ntu.edu.tw:/path/to/remote/directory
+
+# 從遠端複製到本地
+scp username@sand.lu.im.ntu.edu.tw:/path/to/remote/file /path/to/local/directory
+
+# 複製整個目錄
+scp -r /path/to/local/directory username@sand.lu.im.ntu.edu.tw:/path/to/remote/directory
+```
+
+## 伺服器基本操作 (Linux)
+
+成功登入伺服器後，你會進入 Linux 的命令列環境。以下是一些常用指令：
+
+- `ls`: 列出目前目錄的檔案和資料夾。
+  - `ls -a`: 顯示隱藏檔案。
+  - `ls -l`: 顯示詳細資訊。
+- `cd <directory_name>`: 切換目錄。
+  - `cd ..`: 回到上一層目錄。
+  - `cd ~` 或 `cd`: 回到家目錄。
+- `pwd`: 顯示目前所在路徑。
+- `mkdir <directory_name>`: 建立新資料夾。
+- `rm <file_name>`: 刪除檔案。
+  - `rm -r <directory_name>`: 刪除資料夾及其內容 (請小心使用！)。
+- `cat <file_name>`: 查看檔案內容。
+- `nano <file_name>` 或 `vim <file_name>`: 文字編輯器 (nano 較易上手)。
+- `sudo <command>`: 以系統管理員權限執行指令 (請謹慎使用)。
+- `df -h`: 查看磁碟空間使用情況。
+- `free -m`: 查看記憶體使用情況。
+- `top` 或 `htop`: 查看系統程序與資源使用情況。
+
+## 遠端伺服器環境介紹
+
+遠端伺服器通常使用 Linux 作業系統，例如 Ubuntu Server，提供穩定、安全的環境來運行應用程式。
+
+### 常見伺服器組件
+
+1. **作業系統**：通常是 Linux 發行版，如 Ubuntu Server、CentOS、Debian 等
+2. **Web 伺服器**：如 Nginx、Apache，用於處理 HTTP 請求
+3. **資料庫**：如 MySQL、PostgreSQL、MongoDB，用於數據儲存
+4. **容器技術**：如 Docker、Kubernetes，用於應用程式部署和管理
+5. **防火牆**：如 UFW、iptables，用於網路安全
+6. **監控工具**：如 Prometheus、Grafana，用於系統監控
+
+### NTUIM workshop 伺服器
+
+這是本課程提供的測試環境，我們將在此伺服器上進行實際部署操作。此伺服器具有以下特點：
+
+- Ubuntu Server 作業系統
+- 已預先安裝 Docker 和 Docker Compose
+- 可以通過 SSH 遠端登入
+- 支援多用戶同時使用，需特別注意服務端口的使用和權限管理
+
+<Callout type="action">
+為了讓同學們體驗 SSH 遠端操作，教學團隊準備了一台 VM (Virtual Machine)，每組都有專屬的帳號可以使用喔！
+
+主機資訊：
+- Domain: `sand.lu.im.ntu.edu.tw`
+- IP: `140.112.106.148`
+
+> 感謝 盧信銘 老師 慷慨贊助
+</Callout>
+
+## 使用 SSH 部署 Docker 應用程式
+
+現在我們將手把手教你如何通過 SSH 將我們的 SADo Todo App 部署到遠端伺服器，並能通過網路訪問。
+
+### 部署策略
+
+有多種方式可以將 Docker 應用部署到遠端伺服器：
+
+1. **手動部署**：直接通過 SSH 登入伺服器，執行 Docker 命令
+2. **使用 docker-compose**：將 docker-compose.yml 檔案上傳到伺服器，然後執行 docker-compose up
+3. **使用 Docker Registry**：將映像檔推送到 Registry，然後在伺服器上拉取並運行
+4. **使用 CI/CD 工具**：如 Jenkins、GitHub Actions，自動化部署流程
+
+我們將重點介紹手動部署和使用 docker-compose 的方法。
+
+### 方法一：使用 Git + Docker Compose
+
+這是最簡單的方法，適合開源專案或內部開發：
+
+```bash
+# 1. SSH 連接到遠端伺服器
+ssh username@sand.lu.im.ntu.edu.tw
+
+# 2. 在伺服器上克隆專案
+git clone https://github.com/<yourusername>/SADo.git
+
+# 3. 進入專案目錄
+cd SADo
+
+# 4. 使用 docker-compose 啟動服務
+docker-compose up -d
+
+# 5. 檢查服務是否正常運行
+docker-compose ps
+```
+
+這種方法的優點是簡單直接，特別適合開發環境或小型專案。
+
+### 方法二：使用預先建構的映像檔
+
+如果你已經將映像檔推送到 Docker Registry (如 Docker Hub)：
+
+```bash
+# 1. SSH 連接到遠端伺服器
+ssh username@sand.lu.im.ntu.edu.tw
+
+# 2. 在伺服器上拉取映像檔
+docker pull yourusername/todo-app:1.0
+
+# 3. 運行容器
+docker run -d -p 8080:3000 --name todo-app-frontend yourusername/todo-app-frontend:1.0
+
+# 4. 檢查容器是否正常運行
+docker ps
+```
+
+### 方法三：使用 Docker Compose 與預先建構的映像檔
+
+```bash
+# 1. 準備 docker-compose.yml 檔案（請記得修改 image path）
+cat > docker-compose.yml << EOF
+version: '3.8'
+
+services:
+  frontend:
+    image: <yourusername>/sado-frontend:1.0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: always
+
+  backend:
+    image: <yourusername>/sado-backend:1.0  
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/sado
+    depends_on:
+      - mongo
+    restart: always
+
+  mongo:
+    image: mongo:latest
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+
+volumes:
+  mongo-data:
+EOF
+
+# 2. 啟動服務
+docker-compose up -d
+
+# 3. 檢查服務狀態
+docker-compose ps
+```
+
+### 步驟一：連接到伺服器
+
+```bash
+ssh username@sand.lu.im.ntu.edu.tw
+```
+### 步驟二：克隆專案
+
+```bash
+# 克隆 SADo 專案
+git clone https://github.com/113-2-SAD/SADo.git
+
+# 進入專案目錄
+cd SADo
+```
+
+### 步驟三：準備 docker-compose.yml
+
+你可以使用先前學習的 docker-compose.yml 範例，但需要注意：
+1. 確保 port mapping 不與其他 process 衝突
+2. 使用你自己專屬的服務名稱和容器名稱
+
+```bash
+# 修改 docker-compose.yml (如有必要)
+nano docker-compose.yml
+```
+
+### 步驟四：啟動服務
+
+```bash
+# 啟動服務
+docker-compose up -d
+
+# 檢查是否成功運行
+docker-compose ps
+```
+
+### 步驟五：訪問應用
+
+通過瀏覽器訪問：
+```
+http://140.112.106.148:port
+```
+
+
+## 重要「真實世界」考量
+
+我們今天的部署非常基礎，真實世界的雲端部署還需要考慮：
+
+- **安全性**：
+    - 防火牆設定 (只開放必要的 port，例如 `ufw` on Linux)。
+    - HTTPS 加密 (SSL/TLS 憑證，例如 Let's Encrypt)。
+    - 環境變數與密鑰管理 (例如 Vault, Doppler, .env 檔案配合 .gitignore)。
+    - 定期更新系統與軟體套件。
+    - 使用非 root 使用者執行應用程式。
+- **網域名稱 (Domain Name)**：用好記的網址 (如 `www.mytodoapp.com`) 而非 IP 位址，並設定 DNS 紀錄。
+- **資料庫持久化與備份**：確保資料庫資料在容器重啟後不會遺失，並定期備份。
+- **監控與告警 (Monitoring & Alerting)**：追蹤應用程式效能 (APM)、錯誤、伺服器資源，並在出問題時通知 (例如 Prometheus, Grafana, Sentry)。
+- **日誌管理 (Logging)**：集中管理與分析應用程式及系統日誌 (例如 ELK Stack, Loki)。
+- **基礎設施即程式碼 (Infrastructure as Code, IaC)**：使用程式碼管理和配置基礎設施 (例如 Terraform, Ansible)。
+- **高可用性與擴展性 (High Availability & Scalability)**：設計系統以應對故障並能根據負載自動擴展。
+
+這些是更進階的主題，同學有興趣的話可以在課餘時間自行深入研究～
+
+## 遠端伺服器的使用者權限管理
+
+在多用戶環境下，正確管理使用者權限非常重要，以確保系統安全和資源的合理分配。
+
+### 基本原則
+
+1. **最小權限原則**：只授予完成工作所需的最小權限
+2. **職責分離**：不同角色有不同權限
+3. **明確授權**：權限應該是明確授予的，而非默認的
+
+### Linux 權限管理基礎
+
+```bash
+# 查看檔案權限
+ls -l
+
+# 更改檔案權限
+chmod 755 filename  # 給予擁有者讀寫執行權限，給其他人讀執行權限
+
+# 更改檔案所有者
+chown newowner filename
+
+# 更改檔案所屬群組
+chgrp newgroup filename
+
+# 同時更改所有者和群組
+chown newowner:newgroup filename
+```
+
+### Docker 權限管理
+
+在使用 Docker 時，需要注意以下權限相關問題：
+
+1. **Docker 群組**：將用戶添加到 docker 群組可以不使用 sudo 運行 Docker 命令
+2. **容器內權限**：避免在容器內使用 root 用戶
+3. **卷權限**：注意卷掛載時的權限問題
+4. **網路權限**：避免映射特權端口（小於 1024 的端口）
+
+### 共享環境注意事項
+
+在共享的伺服器環境中，還需要特別注意：
+
+1. **端口衝突**：避免使用已被其他用戶佔用的端口
+2. **資源限制**：注意 CPU、記憶體等資源的合理使用
+3. **檔案許可權**：避免修改或刪除其他用戶的檔案
+4. **清理資源**：不使用時關閉容器，刪除不再需要的映像檔
+5. **保護敏感資訊**：不要在共享環境中存儲密碼等敏感資訊
+
+## 部署應用程式的最佳實踐
+
+部署應用程式到生產環境時，應遵循以下最佳實踐：
+
+1. **使用環境變數**：不同環境使用不同的配置
+2. **資料持久化**：確保重要資料正確持久化
+3. **日誌管理**：設置適當的日誌級別和輪換策略
+4. **監控和警報**：設置監控和異常警報
+5. **備份策略**：定期備份重要資料
+6. **安全更新**：保持系統和軟體的最新安全補丁
+7. **容錯和自動恢復**：設置自動重啟和健康檢查
+
+## 小結
+
+通過本單元的學習，你應該已經掌握了：
+
+- SSH 的基本概念和使用方法
+- 如何生成和使用 SSH 金鑰對
+- 使用 SSH 連接遠端伺服器的基本命令
+- 部署 Docker 容器化應用的不同策略
+- 多用戶環境下的權限管理和注意事項
+- 雲端原生的基本概念和發展方向
+- 生產環境部署的最佳實踐
+
+這些知識和技能為你進入雲端原生開發和部署的世界打下了基礎。在隨後的課程中，我們會深入探討更多相關主題。
+
+## 延伸閱讀與參考資料
+
+- [使用 SSH 金鑰進行安全連接](https://www.ssh.com/academy/ssh/public-key-authentication)
+- [SSH 遠端部署最佳實踐](https://www.digitalocean.com/community/tutorials/ssh-essentials-working-with-ssh-servers-clients-and-keys)
+- [CircleCI 中的 SSH 部署](https://circleci.com/docs/deploy-over-ssh/)
+- [GitHub Actions 與 SSH 部署整合](https://github.com/marketplace/actions/ssh-remote-commands)
+- [無停機部署策略詳解](https://docs.docker.com/engine/swarm/swarm-tutorial/)
+- [SSH Config 檔案的設定與管理](https://linuxize.com/post/using-the-ssh-config-file/)

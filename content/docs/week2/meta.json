@@ -3,5 +3,5 @@
   "title": "Week 2",
   "description": "Week 2",
   "icon": "Dice2",
-  "pages": ["index", "getting-started"]
+  "pages": ["index", "review-week1", "docker-registry", "docker-compose", "cloud-native", "ssh-deploy", "qa-discussion"]
 }

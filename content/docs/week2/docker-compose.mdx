@@ -1,0 +1,370 @@
+---
+title: Docker Compose 與多服務協作
+description: 學習如何使用 Docker Compose 管理多容器應用
+icon: Layers
+---
+
+現代應用程式通常由多個服務組件協同工作，如前端、後端、資料庫等。手動管理這些服務的啟動、停止和連接是繁瑣且容易出錯的。
+Docker Compose 是一個工具，用於定義和運行多容器 Docker 應用程式，讓我們能夠通過一個 YAML 檔案簡單地管理多個容器。
+
+## 為什麼需要 Docker Compose？
+
+### 管理多容器應用的挑戰
+
+回想一下我們的 Todo App，它包含：
+- 前端 (Frontend) 服務
+- 後端 (Backend) 服務
+- 資料庫 (Database) 服務
+
+如果用 `docker run` 指令個別啟動，你會遇到以下問題：
+- 需要手動管理多個容器的啟動順序，例如資料庫需要先啟動，後端才能啟動
+- 網路設定複雜 (例如：前端如何找到後端 API？)
+- 連接埠映射 (Port mapping) 容易混亂，有時候一台機器上開了十幾個服務，連接埠很容易撞在一起
+- 更新或重啟多個服務很麻煩，你需要一次輸入很多指令
+- 指令需要各種複製貼上
+
+> **想像一下，如果你的應用有十幾個微服務，手動管理會是一場災難！**
+
+## Docker Compose 基本概念
+
+Docker Compose 是一個用來**定義和執行多容器 Docker 應用程式**的工具。
+使用 YAML 檔案（通常命名為 `docker-compose.yml`）來配置應用程式的服務、網路和卷宗。
+使用單一命令，可以從配置檔案中創建並啟動所有服務。
+
+### Docker Compose 的主要優勢
+
+- **簡化配置**：將複雜的多容器設定集中管理
+- **單一命令操作**：使用一個命令就能啟動、停止整個應用
+- **環境變數支援**：可以使用環境變數進行配置
+- **網路自動配置**：自動設置服務間的網路連接
+- **數據持久化**：簡化卷宗管理
+- **擴展服務**：可以輕鬆橫向擴展服務實例
+- **一致環境**：確保開發、測試、生產環境的一致性
+- **快速啟動/停止**：一鍵管理整個應用程式堆疊
+- **易於擴展**：方便地增加或修改服務
+
+> 現在 Docker Compose 已經是 Docker 的一部分，也進化到可以與 Docker Swarm、Stack 等更複雜的架構整合
+
+## docker-compose.yml 基本結構
+
+Docker Compose 檔案的基本結構如下：
+
+```yaml
+version: '3.8'  # 指定 Docker Compose 的版本
+
+services:     # 定義各個服務
+  service1:   # 服務名稱
+    image: image_name  # 使用的映像檔
+    # 或者使用 build 從 Dockerfile 建構
+    build: ./path/to/dockerfile/dir
+    ports:    # 端口映射
+      - "host_port:container_port"
+    environment:  # 環境變數
+      - KEY=VALUE
+    volumes:   # 卷宗掛載
+      - /host/path:/container/path
+    depends_on:  # 依賴關係
+      - service2
+    networks:  # 網路配置
+      - network_name
+
+  service2:
+    # ...
+
+networks:    # 定義網路
+  network_name:
+    driver: bridge
+
+volumes:     # 定義卷宗
+  volume_name:
+```
+
+### 常用配置選項說明
+
+**services 部分的常用選項：**
+
+- **image**: 指定要使用的 Docker 映像檔
+- **build**: 從 Dockerfile 建構映像檔（可以指定目錄或具體配置）
+- **ports**: 連接容器和主機的端口
+- **expose**: 暴露端口但不映射到主機
+- **environment**: 設置環境變數
+- **env_file**: 從檔案加載環境變數
+- **volumes**: 掛載卷宗
+- **depends_on**: 定義服務間的依賴關係（如資料庫需要先啟動，後端才能啟動）
+- **networks**: 連接到指定網路
+- **restart**: 定義重啟策略（如 `always`, `on-failure`, `unless-stopped`）
+- **command**: 覆蓋容器的預設命令
+
+**networks 部分的常用選項：**
+
+- **driver**: 指定網路驅動（如 `bridge`, `overlay`）
+- **driver_opts**: 傳遞給驅動的選項
+- **external**: 是否使用已存在的外部網路
+
+**volumes 部分的常用選項：**
+
+- **driver**: 指定卷宗驅動
+- **external**: 是否使用已存在的外部卷宗
+
+## Docker Compose 常用指令
+
+- **`docker-compose up`**: 建立並啟動所有服務
+  - `-d` (detached mode): 在背景執行
+  - `--build`: 在啟動前重新建置映像檔
+- **`docker-compose down`**: 停止並移除服務、網路、資料卷
+- **`docker-compose ps`**: 查看所有服務狀態
+- **`docker-compose logs`**: 查看服務日誌
+  - `-f`: 持續查看日誌
+- **`docker-compose restart`**: 重啟服務
+- **`docker-compose exec`**: 進入容器執行命令
+
+> 基本上你只要記住 `docker-compose up -d --build` 這個指令就夠了！（厲害吧）
+
+## Todo App 進階範例：前端、後端與資料庫
+
+讓我們基於 SADo 專案的架構建立一個包含前端、後端和資料庫的 Todo App 完整應用程式的 Docker Compose 配置。
+
+### SADo 應用架構
+
+SADo 專案是一個 monorepo 結構的 Todo 應用程式，由以下三部分組成：
+
+1. **前端**：使用 Next.js、React、TypeScript 和 Tailwind CSS 構建的使用者界面
+2. **後端**：使用 Node.js、Express.js、TypeScript 開發的 API 服務
+3. **資料庫**：使用 MongoDB 進行資料儲存
+
+### 完整的 docker-compose.yml 範例
+
+以下是基於 SADo 專案架構的 docker-compose.yml 範例：
+
+```yaml
+version: '3.8'
+
+services:
+  # 前端服務
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    restart: always
+
+  # 後端服務
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/todo
+      - PORT=5000
+    depends_on:
+      - mongo
+    restart: always
+
+  # MongoDB 服務
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - todo-db-data:/data/db
+    restart: always
+
+volumes:
+  todo-db-data:  # 持久化資料庫資料
+```
+
+### 範例說明
+
+這個配置文件包含三個服務：
+1. **frontend**: 構建並運行前端 Next.js 應用
+2. **backend**: 構建並運行後端 Express.js API
+3. **mongo**: 使用官方 MongoDB 映像檔作為資料庫
+
+服務間的依賴關係是：frontend → backend → mongo，這確保了服務啟動的正確順序。
+使用 volumes 掛載 MongoDB 資料，確保資料持久化，不會在容器重啟後丟失。
+
+## 實作：部署多服務 Todo App
+
+現在讓我們實際操作，使用 Docker Compose 部署基於 SADo 架構的多服務 Todo App。
+
+### 步驟一：準備應用程式目錄結構
+
+SADo 使用 monorepo 架構管理前後端程式碼，目錄結構大致如下：
+
+```
+sado/
+├── docker-compose.yml
+├── apps/
+│   ├── frontend/
+│   │   ├── Dockerfile
+│   │   └── ... (前端程式碼)
+│   └── backend/
+│       ├── Dockerfile
+│       └── ... (後端程式碼)
+├── packages/
+│   ├── ui/
+│   ├── eslint-config/
+│   └── typescript-config/
+└── README.md
+```
+
+### 步驟二：編寫 docker-compose.yml 檔案
+
+在專案根目錄創建 docker-compose.yml 檔案：
+
+```yaml
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    restart: always
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/todo
+      - PORT=5000
+    depends_on:
+      - mongo
+    restart: always
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - todo-db-data:/data/db
+    restart: always
+
+volumes:
+  todo-db-data:
+```
+
+### 步驟三：啟動應用
+
+```bash
+# 在專案根目錄執行
+docker-compose up -d --build
+```
+
+### 步驟四：驗證服務是否正常運行
+
+```bash
+# 檢查服務狀態
+docker-compose ps
+
+# 查看日誌
+docker-compose logs -f frontend
+docker-compose logs -f backend
+```
+
+瀏覽器訪問 http://localhost:3000 應該能看到運行中的 Todo App 前端介面。
+
+### 步驟五：停止應用
+
+當不再需要運行應用時，可以停止所有服務：
+
+```bash
+docker-compose down
+```
+
+如果需要同時刪除持久化的資料，可以使用：
+
+```bash
+docker-compose down -v
+```
+
+## Docker Swarm & Stack - 進階主題
+
+Docker Compose 非常適合本地開發和簡單部署，但對於更複雜的生產環境，我們可能需要更強大的工具。Docker Swarm 提供了集群管理和服務編排功能。
+
+### 為什麼需要 Docker Swarm？
+
+想像一下，你的應用程式需要更新：
+- 如果直接停止舊版本再啟動新版本，會造成服務中斷
+- 如果有多個使用者同時使用，這會造成不好的體驗
+- 如果更新出問題，需要快速 Rollback
+
+Docker Swarm 可以幫你實現：
+- 零停機時間更新（Downtime-free updates）
+- 自動負載平衡（Load balancing）
+- 故障自動轉移（Failover）
+- 服務自動擴展（Auto-scaling）
+
+### Docker Swarm 架構
+
+```
+                    [Load Balancer]
+                           │
+                           ▼
+                    [Manager Node]
+                           │
+        ┌────────────┬────┴─────┬────────────┐
+        ▼            ▼           ▼            ▼
+[Worker Node]  [Worker Node] [Worker Node] [Worker Node]
+```
+
+當你要更新應用程式時：
+1. Swarm 會先啟動新版本的容器
+2. 確認新容器健康後，才關閉舊容器
+3. 如果新版本有問題，可以立即回滾
+4. 整個過程使用者無感
+
+### Docker Swarm 常用指令
+
+```bash
+# 初始化 Swarm
+docker swarm init
+
+# 部署 stack（零停機更新）
+docker stack deploy -c docker-compose.yml todo-app
+
+# 查看服務狀態
+docker service ls
+
+# 擴展服務數量（增加 Availability + Load Balancing）
+docker service scale todo-app_frontend=3
+```
+
+> 雖然 Docker Swarm 可以處理基本的零停機部署，但在需要更複雜的部署策略時，可以考慮使用 Kubernetes。
+
+## 小結
+
+通過本單元的學習，你應該已經掌握了：
+
+- Docker Compose 的基本概念和優勢
+- docker-compose.yml 檔案的結構和常用配置選項
+- 如何使用 Docker Compose 部署多服務應用
+- Docker Compose 的常用命令
+- Docker Swarm 的基本概念和使用場景
+
+下一個單元，我們將學習如何使用 SSH 將 Docker 容器化應用部署到遠端伺服器。
+
+## 延伸閱讀與參考資料
+
+- [Docker Compose 官方文檔](https://docs.docker.com/compose/)
+- [Docker Compose 檔案規範](https://docs.docker.com/compose/compose-file/)
+- [Docker Compose 在生產環境中的最佳實踐](https://docs.docker.com/compose/production/)
+- [使用 Docker Compose 進行開發環境設置](https://docs.docker.com/compose/features-uses/)
+- [Docker 官方範例應用程式](https://github.com/docker/awesome-compose)
+- [What Is the Difference Between Dockers and Kubernetes?](https://www.paloaltonetworks.com/cyberpedia/kubernetes-docker) 

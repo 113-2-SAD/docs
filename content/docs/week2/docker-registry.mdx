@@ -1,0 +1,306 @@
+---
+title: Docker 進階概念
+description: Docker Registry、版本標籤管理與實作
+icon: Server
+---
+
+在上週我們已經學習了 Docker 的基本操作，包括如何建立 Dockerfile、建構映像檔及運行容器。
+本週我們將進一步探討 Docker 的進階概念，包括 Docker Registry、版本標籤管理等，
+並透過實作將上週完成的 Todo App 映像檔推送至 Docker Hub 或自架 Registry。
+
+## 複習：Docker 基本指令
+
+在開始進階概念前，讓我們先快速複習一些常用的 Docker 指令：
+
+- `docker run <image_name_or_id>`：運行容器
+- `docker build -t <image_name> .`：使用 Dockerfile 建置映像檔
+- `docker images`：列出所有映像檔
+- `docker ps`：列出正在運行的容器，`docker ps -a`：列出所有容器
+- `docker logs <container_name_or_id>`：查看容器日誌
+- `docker exec -it <container_name_or_id> sh`：進入容器執行命令
+- `docker stop <container_name_or_id>`：停止容器
+- `docker rm <container_name_or_id>`：移除容器
+- `docker rmi <image_name_or_id>`：移除映像檔
+- `docker pull <image_name_or_id>`：拉取映像檔
+
+
+## Docker Registry 介紹
+
+Docker Registry 是一個儲存和分發 Docker 映像檔的服務，它允許開發者們共享和管理容器映像檔。
+主要有兩種類型的 Registry：
+
+1. **公開 Registry**：如 Docker Hub，提供免費儲存公開映像檔的服務
+2. ** Private Registry**：自行架設或使用雲端服務提供商的 Private Registry，適合儲存機密或內部使用的映像檔
+
+### Docker Hub
+
+[Docker Hub](https://hub.docker.com/) 是 Docker 官方提供的公開 Registry，上面有大量現成的映像檔可供使用。
+
+**使用 Docker Hub 的基本流程：**
+
+1. 在 Docker Hub 上註冊帳號
+2. 在本機使用 `docker login` 登入 Docker Hub
+3. 為本地映像檔加上標籤 (tag)
+4. 推送 (push) 映像檔到 Docker Hub
+5. 從 Docker Hub 拉取 (pull) 映像檔
+
+**實際操作步驟：**
+
+```bash
+# 登入 Docker Hub
+docker login
+# 輸入用戶名和密碼
+
+# 為現有映像檔加標籤（格式：用戶名/映像檔名:版本）
+docker tag my-app:latest yourusername/my-app:1.0
+
+# 推送映像檔到 Docker Hub
+docker push yourusername/my-app:1.0
+
+# 從 Docker Hub 拉取映像檔
+docker pull yourusername/my-app:1.0
+```
+
+### Private Registry
+
+當我們需要保護映像檔或在內部網路中共享時，可以考慮建立 Private Registry。
+
+**常見的 Private Registry 解決方案：**
+
+1. **Docker Registry**：Docker 官方提供的開源 Registry 實作
+2. **Harbor**：由 VMware 開源的企業級 Registry，提供更多進階功能
+3. **雲端服務**：各大雲端服務商如 AWS ECR、Google Container Registry、Azure Container Registry 等
+
+## 版本標籤管理
+
+Docker 映像檔使用標籤 (tag) 來標識不同版本，良好的標籤管理策略對於容器化應用的部署和維護至關重要。
+
+### 標籤命名策略
+
+**常見的標籤命名策略：**
+
+1. **語義化版本**：遵循 `major.minor.patch` 格式，如 `1.0.0`、`1.1.0`
+2. **環境標識**：如 `production`、`staging`、`development`
+3. **Git 相關標識**：如 `git-commit-hash` 或 `branch-name`
+4. **日期標識**：如 `YYYYMMDD` 格式
+5. **特殊標籤**：如 `latest` (最新版本)、`stable` (穩定版本)
+
+**建議的標籤命名 Common Practices：**
+
+- 為每個映像檔提供清晰的語義化版本標籤
+- 避免過度依賴 `latest` 標籤，它可能導致不可預測的結果
+- 考慮使用不可變標籤策略，每次建構新映像檔時創建新標籤
+- 在 CI/CD 管線中自動化標籤的生成和管理
+
+### 映像檔管理最佳實踐
+
+映像檔管理的一些重要考量：
+
+1. **映像檔大小優化**：
+   - 使用輕量級基礎映像檔（如 Alpine）
+   - 實施多階段構建
+   - 清理不必要的檔案和相依套件
+
+2. **安全性考量**：
+   - 定期掃描映像檔中的安全漏洞
+   - 避免在映像檔中包含敏感資訊
+   - 使用最小權限原則
+
+3. **版本控制整合**：
+   - 將映像檔標籤與程式碼版本對應
+   - 在 CI/CD 管線中自動化映像檔構建和推送
+   - 記錄每個映像檔的構建上下文和內容
+
+## 實作：推送 Todo App 映像檔到 Registry
+
+我們將使用 SADo 專案，將其前端與後端映像檔推送到 Docker Hub。
+
+### 步驟一：確保 SADo 專案已建構映像檔
+
+首先檢查是否已有映像檔，若沒有則需要建構：
+
+```bash
+# 檢查本地映像檔列表
+docker images
+
+# 如果尚未建構，使用 Dockerfile 建構前端和後端映像檔
+# 在專案根目錄執行
+cd SADo
+
+# 建構前端映像檔
+docker build -t sado-frontend:1.0 -f ./apps/frontend/Dockerfile ./apps/frontend
+
+# 建構後端映像檔
+docker build -t sado-backend:1.0 -f ./apps/backend/Dockerfile ./apps/backend
+```
+
+### 步驟二：登入 Docker Hub
+
+```bash
+# 登入 Docker Hub
+docker login
+# 輸入用戶名和密碼
+```
+
+### 步驟三：為映像檔加上符合 Docker Hub 規範的標籤
+
+```bash
+# 為前端映像檔加標籤
+docker tag sado-frontend:1.0 yourusername/sado-frontend:1.0
+
+# 為後端映像檔加標籤
+docker tag sado-backend:1.0 yourusername/sado-backend:1.0
+```
+
+### 步驟四：推送映像檔到 Docker Hub
+
+```bash
+# 推送前端映像檔
+docker push yourusername/sado-frontend:1.0
+
+# 推送後端映像檔
+docker push yourusername/sado-backend:1.0
+```
+
+### 步驟五：驗證映像檔是否成功推送
+
+1. 訪問 [Docker Hub](https://hub.docker.com/) 網站
+2. 登入你的帳號
+3. 查看是否能看到剛才推送的映像檔
+
+### 步驟六：從 Docker Hub 拉取映像檔
+
+```bash
+# 從其他機器上拉取前端映像檔
+docker pull yourusername/sado-frontend:1.0
+
+# 從其他機器上拉取後端映像檔
+docker pull yourusername/sado-backend:1.0
+```
+
+### 步驟七：使用 docker-compose 部署
+
+創建 docker-compose.yml 檔案部署整個應用：
+
+```yaml
+version: '3.8'
+
+services:
+  frontend:
+    image: yourusername/sado-frontend:1.0
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    restart: always
+
+  backend:
+    image: yourusername/sado-backend:1.0
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/todo
+      - PORT=5000
+    depends_on:
+      - mongo
+    restart: always
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - todo-db-data:/data/db
+    restart: always
+
+volumes:
+  todo-db-data:
+```
+
+然後啟動服務：
+
+```bash
+# 啟動服務
+docker-compose up -d
+```
+
+## 使用 Private Registry
+
+如果要使用 Private Registry，可以使用 Docker 官方提供的 Registry 映像檔快速部署：
+
+```bash
+# 啟動一個本地 Registry
+docker run -d -p 5000:5000 --name registry registry:2
+
+# 標記映像檔指向本地 Registry
+docker tag todo-app:1.0 localhost:5000/todo-app:1.0
+
+# 推送到本地 Registry
+docker push localhost:5000/todo-app:1.0
+
+# 從本地 Registry 拉取映像檔
+docker pull localhost:5000/todo-app:1.0
+```
+
+## 在不同環境中使用映像檔
+
+當應用程式需要在不同環境（如開發、測試、生產）部署時，可以採用不同的策略：
+
+1. **使用環境變數**：相同映像檔，不同環境變數
+   ```bash
+   # 開發環境
+   docker run -e NODE_ENV=development -e API_URL=http://dev-api yourusername/todo-app:1.0
+   
+   # 生產環境
+   docker run -e NODE_ENV=production -e API_URL=http://prod-api yourusername/todo-app:1.0
+   ```
+
+2. **使用特定環境映像檔**：為每個環境創建專用映像檔
+   ```bash
+   # 構建開發環境映像檔
+   docker build -t yourusername/todo-app:dev --build-arg ENV=development .
+   
+   # 構建生產環境映像檔
+   docker build -t yourusername/todo-app:prod --build-arg ENV=production .
+   ```
+
+3. **使用 docker-compose 配置多環境**：
+   ```bash
+   # 開發環境
+   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+   
+   # 生產環境
+   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+   ```
+
+## 常見問題與解決方案
+
+1. **推送失敗**：檢查是否已經登入，以及映像檔標籤是否符合規範
+2. **權限問題**：確認 Docker Hub 帳號權限，或 Private Registry 的存取控制設定
+3. **映像檔太大**：考慮使用多階段建構減小映像檔體積，或使用更有效的基礎映像檔
+4. **安全掃描問題**：Docker Hub 會自動掃描推送的映像檔，如有安全問題需修復後重新推送
+5. **映像檔拉取限制**：Docker Hub 對免費帳號有拉取次數限制，可考慮付費方案或 Private Registry
+
+## 小結
+
+通過本單元的學習，你應該已經掌握了：
+
+- Docker Registry 的基本概念和類型
+- 如何使用 Docker Hub 管理和共享映像檔
+- 映像檔標籤命名策略及最佳實踐
+- 如何將自己開發的應用程式映像檔推送到 Registry
+- 簡單 Private Registry 的建立和使用方法
+- 在不同環境中使用映像檔的策略
+
+這些技能將幫助你更有效地管理和分發容器化應用，為接下來的 Docker Compose 與多服務協作打下基礎。
+
+## 延伸閱讀與參考資料
+
+- [Docker Registry 官方文檔](https://docs.docker.com/registry/)
+- [Docker Hub 使用指南](https://docs.docker.com/docker-hub/)
+- [設置私有 Docker Registry 的安全性最佳實踐](https://docs.docker.com/registry/security/)
+- [DockerHub Registry vs GitHub Container Registry](https://jfrog.com/devops-tools/article/comparing-docker-hub-and-github-container-registry/)
+- [使用 Docker Content Trust 確保映像檔安全](https://docs.docker.com/engine/security/trust/)
+- [容器映像檔分發的進階策略](https://docs.docker.com/engine/swarm/services/)

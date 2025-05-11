@@ -1,0 +1,353 @@
+---
+title: 上週回顧
+description: 第一週概念與技術回顧和 Cheat Sheet
+icon: ClipboardList
+---
+
+<Callout type="info">
+### 安裝 Playwright 瀏覽器驅動
+
+上次的課堂作業點名，教學團隊發現很多同學在執行 Playwright 測試時，遇到 `Error: browserType.launch: Executable doesn't exist` 錯誤。這是因為 Playwright 需要安裝特定的瀏覽器驅動程式才能運作。
+
+要解決此問題，請執行以下命令安裝所需的瀏覽器驅動：
+
+```bash
+npx playwright install --with-deps
+```
+
+這個命令會安裝 Chromium、Firefox 和 WebKit 瀏覽器驅動，以及所有必要的系統依賴，確保 E2E 測試可以正常執行。
+
+Browser Drivers 安裝好後，再執行一次應該就可以正確地測試囉！
+</Callout>
+
+## Git 版本控制
+
+### Key Takeaways
+- Git 是分散式版本控制系統，可追蹤檔案變更歷史
+- 分支開發模式使團隊協作更有效率
+- 衝突是正常的，應當學會如何正確解決
+- 良好的 commit 訊息能大幅提高協作品質
+
+### Git 常用指令 Cheat Sheet
+
+| 指令 | 說明 | 範例 |
+|------|------|------|
+| `git init` | 初始化專案，創建 .git 資料夾 | `git init` |
+| `git clone` | 複製遠端專案 | `git clone https://github.com/username/repo.git` |
+| `git add` | 加入檔案到暫存區 | `git add .` 或 `git add file.js` |
+| `git commit` | 提交變更到本地庫 | `git commit -m "feat: add login function"` |
+| `git push` | 推送變更到遠端 | `git push origin main` |
+| `git pull` | 拉取並合併遠端變更 | `git pull origin main` |
+| `git fetch` | 下載遠端變更但不合併 | `git fetch origin` |
+| `git status` | 查看檔案狀態 | `git status` |
+| `git log` | 查看變更歷史 | `git log` 或 `git log --oneline` |
+| `git branch` | 列出/創建分支 | `git branch` 或 `git branch feature/login` |
+| `git checkout` | 切換分支 | `git checkout develop` 或 `git checkout -b feature/new` |
+| `git merge` | 合併分支 | `git merge feature/login` |
+| `git diff` | 查看變更的內容 | `git diff` 或 `git diff file.js` |
+| `git reset` | 重設到特定狀態 | `git reset --hard HEAD^` |
+| `git stash` | 暫存未提交的變更 | `git stash` 和 `git stash pop` |
+
+### Commit Message 最佳實踐
+
+撰寫清晰一致的 commit message 能幫助團隊理解程式碼變更的目的和內容。遵循以下前綴(prefix)規範可使 commit 歷史更有條理：
+
+| Type | 說明 | 範例 |
+|------|------|------|
+| `feat` | 新增/修改功能 (feature) | `feat: add user registration` |
+| `fix` | 修補 bug (bug fix) | `fix: resolve login error on Safari` |
+| `docs` | 文件修改 (documentation) | `docs: update API endpoints in README` |
+| `style` | 格式調整 (不影響程式碼運行) | `style: format code and add semicolons` |
+| `refactor` | 重構 (既不是新增功能，也不是修補 bug) | `refactor: simplify authentication logic` |
+| `perf` | 改善效能 | `perf: optimize database queries` |
+| `test` | 增加測試 | `test: add unit tests for auth service` |
+| `chore` | 建構程序或輔助工具的變動 | `chore: update webpack configuration` |
+| `revert` | 撤銷回覆先前的 commit | `revert: feat: user profile page (回覆版本: a1b2c3d)` |
+
+**規範格式**: `type(scope): subject`
+
+- **type**: 上述類別之一
+- **scope** (選填): 表示 commit 影響的範圍，如 `auth`、`api`、`ui` 等
+- **subject**: 簡明扼要的變更描述
+
+**範例**:
+```
+feat(auth): implement OAuth2 login with Google
+fix(ui): resolve button alignment in Safari browser
+docs(api): update authentication endpoints documentation
+refactor(core): simplify error handling logic
+```
+
+遵循這種統一的 commit message 格式有助於：
+- 自動生成變更日誌 (CHANGELOG)
+- 使程式碼審查更有效率
+- 便於理解專案歷史
+- 提高團隊協作品質
+
+### Git 開發流程實例
+
+**情境：小明為 Todo App 新增「使用者註冊」功能**
+
+1. **開始新任務**
+   ```bash
+   # 切換到開發分支並更新
+   git checkout develop
+   git pull origin develop
+   
+   # 為新功能創建分支
+   git checkout -b feature/user-registration
+   ```
+
+2. **開發功能**
+   ```bash
+   # 查看變更狀態
+   git status
+   
+   # 加入變更到暫存區
+   git add auth.js server.js   # 指定檔案
+   # 或
+   git add .                   # 所有變更
+   
+   # 提交變更
+   git commit -m "feat: add user registration endpoint and logic"
+   ```
+
+3. **繼續開發與推送**
+   ```bash
+   # 完成更多工作並提交
+   git add .
+   git commit -m "feat: create registration form UI"
+   
+   # 查看最近的提交
+   git log -n 2 --oneline
+   
+   # 推送到遠端
+   git push origin feature/user-registration
+   ```
+
+4. **同步團隊變更**
+   ```bash
+   # 獲取並整合團隊的變更
+   git checkout develop
+   git pull origin develop
+   git checkout feature/user-registration
+   git merge develop
+   
+   # 若有衝突，解決後再提交
+   git add .
+   git commit -m "merge: resolve conflicts with develop"
+   git push origin feature/user-registration
+   ```
+
+## Docker 容器化
+
+### Key Takeaways
+- Docker 提供一致的開發、測試和生產環境
+- 容器比虛擬機更輕量、啟動更快
+- Dockerfile 定義映像檔的建構步驟
+- 映像檔 (Image) 是唯讀的，而容器 (Container) 是可運行的實例
+- Docker Compose 可管理多容器應用程式
+
+### Docker 常用指令 Cheat Sheet
+
+| 指令 | 說明 | 範例 |
+|------|------|------|
+| `docker run` | 運行容器 | `docker run -d -p 3000:3000 nginx` |
+| `docker build` | 建構映像檔 | `docker build -t myapp:1.0 .` |
+| `docker images` | 列出映像檔 | `docker images` |
+| `docker ps` | 列出運行中的容器 | `docker ps` 或 `docker ps -a` (所有) |
+| `docker logs` | 查看容器日誌 | `docker logs container_id` |
+| `docker exec` | 在容器中執行命令 | `docker exec -it container_id sh` |
+| `docker stop` | 停止容器 | `docker stop container_id` |
+| `docker rm` | 移除容器 | `docker rm container_id` |
+| `docker rmi` | 移除映像檔 | `docker rmi image_id` |
+| `docker pull` | 拉取映像檔 | `docker pull node:18` |
+| `docker push` | 推送映像檔 | `docker push username/image:tag` |
+| `docker-compose up` | 啟動服務 | `docker-compose up -d` |
+| `docker-compose down` | 停止服務 | `docker-compose down` |
+
+### Dockerfile 關鍵指令
+
+| 指令 | 說明 | 範例 |
+|------|------|------|
+| `FROM` | 指定基礎映像檔 | `FROM node:18-alpine` |
+| `WORKDIR` | 設置工作目錄 | `WORKDIR /usr/src/app` |
+| `COPY` | 複製檔案 | `COPY package.json .` |
+| `ADD` | 複製檔案，支援 URL 和解壓縮 | `ADD https://example.com/file.tar.gz /app/` |
+| `RUN` | 執行命令 | `RUN npm install` |
+| `ENV` | 設置環境變數 | `ENV NODE_ENV=production` |
+| `EXPOSE` | 聲明連接埠 | `EXPOSE 3000` |
+| `CMD` | 指定容器啟動命令 | `CMD ["node", "server.js"]` |
+| `ENTRYPOINT` | 指定容器入口點 | `ENTRYPOINT ["npm", "start"]` |
+| `VOLUME` | 指定掛載點 | `VOLUME /data` |
+
+### Docker 使用流程實例
+
+**情境：小華開發並容器化 Node.js 服務**
+
+1. **準備基礎映像檔**
+   ```bash
+   # 拉取 Node.js 映像檔
+   docker pull node:18-alpine
+   
+   # 確認映像檔存在
+   docker images
+   ```
+
+2. **撰寫 Dockerfile**
+   ```dockerfile
+   # Dockerfile 內容
+   FROM node:18-alpine
+   WORKDIR /usr/src/app
+   COPY package*.json ./
+   RUN npm install
+   COPY . .
+   EXPOSE 8080
+   CMD [ "node", "server.js" ]
+   ```
+
+3. **建構映像檔**
+   ```bash
+   # 建構並標記映像檔
+   docker build -t my-node-service:1.0 .
+   
+   # 確認映像檔已建立
+   docker images
+   ```
+
+4. **運行容器**
+   ```bash
+   # 啟動容器，映射端口並命名
+   docker run -d -p 8080:8080 --name myapp my-node-service:1.0
+   
+   # 檢查容器狀態
+   docker ps
+   ```
+
+5. **日誌與偵錯**
+   ```bash
+   # 檢視容器日誌
+   docker logs myapp
+   
+   # 進入容器執行命令
+   docker exec -it myapp sh
+   
+   # 停止與移除
+   docker stop myapp
+   docker rm myapp
+   ```
+
+## 自動化測試
+
+### Key Takeaways
+- 測試驅動開發 (TDD) 提高程式碼品質和可維護性
+- 單元測試確保個別函數和元件正常運作
+- 端對端 (E2E) 測試確保整個應用流程正常
+- 測試應涵蓋正常情況和邊界條件
+
+### Jest 單元測試 Cheat Sheet
+
+| 概念 | 說明 | 範例 |
+|------|------|------|
+| `describe` | 定義測試組 | `describe('User functions', () => { ... })` |
+| `test/it` | 定義單一測試 | `test('should return user object', () => { ... })` |
+| `expect` | 斷言 | `expect(result).toBe(true)` |
+| `.toBe()` | 嚴格相等比較 | `expect(1 + 1).toBe(2)` |
+| `.toEqual()` | 結構相等比較 | `expect(obj).toEqual({ name: 'Test' })` |
+| `.not` | 否定斷言 | `expect(value).not.toBe(false)` |
+| `beforeEach` | 每個測試前執行 | `beforeEach(() => { setup(); })` |
+| `afterEach` | 每個測試後執行 | `afterEach(() => { cleanup(); })` |
+| `mock` | 模擬函數或模組 | `jest.mock('./database')` |
+
+### Playwright E2E 測試 Cheat Sheet
+
+| 概念 | 說明 | 範例 |
+|------|------|------|
+| `test` | 定義測試 | `test('user can login', async ({ page }) => { ... })` |
+| `page.goto` | 導航到 URL | `await page.goto('https://example.com')` |
+| `page.click` | 點擊元素 | `await page.click('button#login')` |
+| `page.fill` | 填寫表單欄位 | `await page.fill('input#username', 'user')` |
+| `expect` | 斷言 | `await expect(page).toHaveTitle('Dashboard')` |
+| `page.waitFor` | 等待元素 | `await page.waitForSelector('.success')` |
+| `screenshot` | 截圖 | `await page.screenshot({ path: 'screenshot.png' })` |
+
+
+
+## CI/CD 與 GitHub Actions
+
+### Key Takeaways
+- CI/CD 自動化測試、構建和部署流程
+- 持續整合 (CI) 確保代碼變更不會破壞現有功能
+- 持續部署 (CD) 自動將通過測試的代碼部署到生產環境
+- GitHub Actions 提供易用的 CI/CD 工作流程
+
+### GitHub Actions  Cheat Sheet
+
+| 概念 | 說明 |
+|------|------|
+| `workflow` | 自動化流程，由一或多個 jobs 組成 |
+| `job` | 在同一 runner 上執行的一組 steps |
+| `step` | 執行命令或動作的單一任務 |
+| `action` | 可重用的工作單元 |
+| `event` | 觸發 workflow 的事件 (如 push, pull_request) |
+| `runner` | 執行 workflow 的伺服器 |
+| `secrets` | 存儲敏感資訊 |
+| `matrix` | 定義不同配置的測試環境 |
+
+### GitHub Actions 檔案範例
+
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run unit tests
+      run: npm test
+      
+    - name: Run E2E tests
+      run: npm run test:e2e
+  
+  build-and-deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build Docker image
+      run: docker build -t my-app:latest .
+      
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Push to DockerHub
+      run: |
+        docker tag my-app:latest username/my-app:latest
+        docker push username/my-app:latest
+```

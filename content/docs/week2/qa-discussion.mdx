@@ -1,0 +1,348 @@
+---
+title: FAQ
+description: 針對 Docker Registry、Docker Compose、SSH 常見問題進行答疑
+icon: MessageQuestion
+---
+
+本單元將針對 Docker Registry、Docker Compose 和 SSH 遠端部署過程中可能遇到的問題進行討論，並解答常見疑問。
+我們還將介紹分組實作任務和接下來課程的預告。
+
+## Docker Registry 常見問題與答疑
+
+### Q1: Docker Hub 免費帳戶有什麼限制？
+
+Docker Hub 免費帳戶有以下主要限制：
+- 僅能創建一個私有倉庫，其餘都是公開的
+- 匿名拉取限制：每 6 小時最多 100 次拉取請求
+- 認證拉取限制：每 6 小時最多 200 次拉取請求
+
+對於教學和個人使用通常足夠，但對於商業應用可能需要考慮付費計劃或私有 Registry。
+
+### Q2: 如何解決 Docker 映像檔體積過大的問題？
+
+減小 Docker 映像檔體積的方法：
+1. 使用更小的基礎映像檔，如 Alpine Linux
+2. 使用多階段建構 (multi-stage builds)
+3. 減少 RUN 指令的層數，結合使用 && 和 \
+4. 清理不必要的暫存檔和包管理器快取
+5. 只複製必要的檔案到容器中
+6. 使用 .dockerignore 排除不需要的檔案
+
+### Q3: 為什麼我推送映像檔到 Docker Hub 時很慢？
+
+推送速度慢的可能原因：
+1. 網路連接不穩定或頻寬限制
+2. 映像檔體積太大
+3. Docker Hub 伺服器負載高
+
+改善方法：
+1. 使用更好的網路連接
+2. 減小映像檔體積
+3. 考慮使用更近的 Registry 或自建 Registry
+4. 使用增量推送（只推送更改的層）
+
+## Docker Compose 常見問題與答疑
+
+### Q1: Docker Compose 和 Docker Swarm/Kubernetes 有什麼區別？
+
+- **Docker Compose**: 主要用於本地開發和測試環境，管理單主機上的多容器
+- **Docker Swarm**: Docker 內建的集群管理和編排工具，適合中小型項目
+- **Kubernetes**: 功能更強大的容器編排平台，適合大型複雜系統，支持自動擴展、負載均衡等高級功能
+
+### Q2: Docker Compose 的服務啟動順序問題如何解決？
+
+雖然 `depends_on` 可以控制啟動順序，但它不會等待服務完全就緒。解決方法：
+
+1. 使用健康檢查 (healthcheck):
+```yaml
+services:
+  db:
+    image: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+```
+
+2. 使用等待腳本:
+```yaml
+services:
+  backend:
+    depends_on:
+      - db
+    command: ["./wait-for-it.sh", "db:5432", "--", "npm", "start"]
+```
+
+### Q3: 如何管理 Docker Compose 中的敏感資訊？
+
+最佳實踐：
+1. 使用環境變數和 .env 檔案（不要提交到版本控制）
+2. 使用 Docker Secrets（在 Swarm 模式下）
+3. 使用外部密鑰管理服務，如 HashiCorp Vault
+4. 區分開發和生產環境的配置
+
+## Docker Swarm 與 Stack
+
+### Q1: Docker Swarm 能解決哪些生產環境問題？
+
+Docker Swarm 可以解決的關鍵問題：
+- **零停機更新**：應用更新時不會導致服務中斷
+- **自動負載平衡**：在多個節點間分配流量
+- **高可用性**：如果一個節點失敗，服務會自動遷移到健康節點
+- **服務發現**：自動處理服務間的連接和通信
+- **滾動更新**：逐步更新服務，控制更新速度和健康狀態監控
+
+### Q2: Docker Swarm 的基本架構是什麼？
+
+Docker Swarm 採用主從架構：
+- **Manager Nodes**：負責編排和管理集群狀態
+- **Worker Nodes**：運行應用容器的工作節點
+- **Services**：定義應用程式的行為和需求
+- **Tasks**：分配給各 Worker Nodes 的工作單位（容器實例）
+
+這種架構允許應用程式在多個節點上運行多個副本，提高可用性和性能。
+
+### Q3: 如何使用 Docker Swarm 進行零停機部署？
+
+基本步驟：
+```bash
+# 初始化 Swarm
+docker swarm init
+
+# 部署應用 Stack
+docker stack deploy -c docker-compose.yml todo-app
+
+# 更新服務（零停機）
+# 更新 docker-compose.yml 文件後，再次執行
+docker stack deploy -c docker-compose.yml todo-app
+
+# 查看服務狀態
+docker service ls
+
+# 擴展服務實例數
+docker service scale todo-app_frontend=3
+```
+
+## SSH 與遠端部署常見問題與答疑
+
+### Q1: 如何確保 SSH 連接的安全性？
+
+增強 SSH 安全性的方法：
+1. 使用金鑰認證而非密碼
+2. 禁用 root 用戶直接登入
+3. 更改默認 SSH 端口
+4. 限制允許的用戶和 IP
+5. 使用 SSH 配置文件調整安全設置：
+```
+# /etc/ssh/sshd_config
+PermitRootLogin no
+PasswordAuthentication no
+```
+6. 使用防火牆限制 SSH 訪問
+7. 定期更新 SSH 服務
+
+### Q2: 在共享伺服器環境中如何避免端口衝突？
+
+避免端口衝突的策略：
+1. 使用高端口號（如 8000-9000 範圍）
+2. 在部署前檢查端口佔用情況：`netstat -tulpn | grep LISTEN`
+3. 使用環境變數動態分配端口
+4. 與團隊成員協調端口使用
+5. 考慮使用反向代理（如 Nginx）將多個服務整合到一個或少數幾個端口
+
+### Q3: 如何實現自動化部署流程？
+
+自動化部署的方法：
+1. 使用 CI/CD 工具（GitHub Actions, Jenkins, GitLab CI）
+2. 編寫部署腳本，結合 SSH 和 Docker 命令
+3. 使用配置管理工具（Ansible, Chef, Puppet）
+4. 實現簡單的自動部署流程：
+   - 當代碼提交到主分支後
+   - 自動構建 Docker 映像檔
+   - 推送到 Registry
+   - 通過 SSH 執行部署命令
+   - 驗證部署結果
+
+## 雲端原生與雲端部署
+
+### Q1: 雲端原生應用的關鍵特性是什麼？
+
+雲端原生應用具有以下特性：
+1. **容器化**：應用程式和依賴項被打包在容器中
+2. **動態管理**：由雲平台編排、調度和管理
+3. **微服務架構**：應用被分解為獨立的微服務
+4. **API 導向**：服務通過明確定義的 API 進行通信
+5. **韌性設計**：能夠自動從失敗中恢復
+6. **可觀測性**：內置監控、日誌和追蹤功能
+7. **自動擴展**：能夠根據負載自動調整資源
+
+### Q2: 雲端部署的主要挑戰有哪些？
+
+雲端部署面臨的主要挑戰：
+1. **安全性**：保護雲端資源和數據安全
+2. **成本管理**：控制和優化雲資源使用成本
+3. **複雜性**：管理分散式系統的複雜性
+4. **依賴管理**：處理服務之間的依賴關係
+5. **一致性**：確保開發、測試和生產環境的一致性
+6. **網絡延遲**：處理服務間通信的延遲問題
+7. **供應商綁定**：避免過度依賴特定雲服務供應商
+
+### Q3: 初次接觸雲端部署應該注意什麼？
+
+對於初學者的建議：
+1. 從簡單開始：先掌握單台伺服器的部署，再擴展到複雜架構
+2. 學習基礎設施即代碼 (IaC)：用代碼管理雲資源
+3. 建立適當的監控和日誌系統
+4. 實踐最小權限原則
+5. 建立有效的備份和恢復策略
+6. 理解雲服務的計費模式
+7. 使用受管服務減輕維護負擔
+
+## 實作：將 Todo App 部署到測試環境
+
+### 分組任務
+
+1. 小組成員分工：
+   - SADo 專案程式碼閱讀與理解
+   - 映像檔構建和推送
+   - 編寫/修改 docker-compose.yml
+   - SSH 連接與伺服器操作
+   - 測試與驗證部署結果
+
+2. 任務目標：
+   - 將 SADo 應用程式構建為 Docker 映像檔並推送到 Registry
+   - 使用 Docker Compose 配置 Next.js 前端、Express.js 後端及 MongoDB 多服務協作
+   - 通過 SSH 部署到伺服器
+   - 確保應用可以正常訪問和使用
+
+3. 互相檢視：
+   - 每組至少查看一個其他組的部署結果
+   - 提供建設性意見和改進建議
+
+### 部署檢查清單
+
+- [ ] SADo 專案代碼已理解
+- [ ] 完成前端和後端映像檔構建
+- [ ] 成功推送到 Registry
+- [ ] Docker Compose 文件配置正確
+- [ ] 服務可以正常啟動
+- [ ] 前端可以正常訪問
+- [ ] 前後端通信正常
+- [ ] MongoDB 資料持久化正常
+- [ ] 待辦事項功能測試通過
+
+## 常見部署問題排查指南
+
+### 映像檔相關問題
+
+1. **映像檔拉取失敗**
+   ```bash
+   # 檢查是否已登入
+   docker login
+   
+   # 檢查映像檔是否存在
+   docker search yourusername/todo-app
+   
+   # 檢查網絡連接
+   ping hub.docker.com
+   ```
+
+2. **容器啟動失敗**
+   ```bash
+   # 查看容器日誌
+   docker logs container_id
+   
+   # 檢查容器狀態
+   docker inspect container_id
+   
+   # 以互動模式啟動容器排查問題
+   docker run -it --entrypoint /bin/sh yourusername/todo-app
+   ```
+
+### Docker Compose 相關問題
+
+1. **服務無法啟動**
+   ```bash
+   # 查看服務日誌
+   docker-compose logs service_name
+   
+   # 檢查配置文件語法
+   docker-compose config
+   
+   # 以調試模式啟動
+   docker-compose up --verbose
+   ```
+
+2. **服務間通信問題**
+   ```bash
+   # 進入容器檢查網絡
+   docker-compose exec service_name ping other_service
+   
+   # 查看網絡設置
+   docker network ls
+   docker network inspect network_id
+   ```
+
+### SSH 與伺服器相關問題
+
+1. **SSH 連接失敗**
+   ```bash
+   # 檢查連接（帶詳細輸出）
+   ssh -v username@server_ip_address
+   
+   # 檢查私鑰權限
+   chmod 600 ~/.ssh/id_rsa
+   
+   # 測試特定私鑰
+   ssh -i ~/.ssh/specific_key username@server_ip_address
+   ```
+
+2. **權限相關問題**
+   ```bash
+   # 檢查文件權限
+   ls -la /path/to/file
+   
+   # 修改權限
+   chmod +x /path/to/script.sh
+   
+   # 檢查是否在 docker 組
+   groups username
+   ```
+
+## 總結與回顧
+
+### 本週回顧 (Week 2)
+
+- **Docker 進階概念**：Docker Registry、版本標籤管理
+- **Docker Compose**：簡化多容器應用管理
+  - `docker-compose.yml` 的撰寫
+  - `docker-compose up`, `down`, `logs`, `ps` 等指令
+- **SSH 與遠端部署**：
+  - SSH 連線到遠端伺服器
+  - 在伺服器上使用 Git 和 Docker Compose 部署應用
+  - 透過公網 IP 存取應用
+- **雲端原生簡介**：了解容器化應用在雲端環境運行的基本概念和好處
+
+### 下週課程預告
+
+下週我們將探討：
+
+1. **資料庫選型**：介紹各種不同的資料庫，幫助你理解技術選型與架構設計的大概念
+2. **OpenAPI**：API 文件自動化生成，現代化 API 開發流程與最佳實踐
+3. **實作**：基本的 API 文件，並使用 Postman 測試 API
+
+這些主題將幫助你更好地理解現代應用架構中的數據層和 API 設計，為更複雜的系統開發打下基礎。
+
+## 延伸閱讀與參考資料
+
+- [雲原生應用架構指南](https://www.cncf.io/blog/2017/05/15/developing-cloud-native-applications/)
+- [CNCF 雲原生定義](https://github.com/cncf/toc/blob/main/DEFINITION.md)
+- [12 因素應用方法論](https://12factor.net/)
+- [容器化微服務架構模式](https://microservices.io/patterns/microservices.html)
+- [Docker 在生產環境中的最佳實踐](https://docs.docker.com/develop/dev-best-practices/)
+- [Kubernetes 文檔](https://kubernetes.io/docs/home/)
+- [雲原生安全性考量](https://www.aquasec.com/cloud-native-academy/cloud-native-applications/cloud-native-security/)
+- [服務網格介紹](https://istio.io/latest/docs/concepts/what-is-istio/)
+- [DevOps 與 SRE 實踐](https://sre.google/workbook/table-of-contents/)
+- [可觀測性平台與工具比較](https://opentracing.io/docs/overview/what-is-tracing/) 

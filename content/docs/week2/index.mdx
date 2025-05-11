@@ -1,7 +1,47 @@
 ---
-title: 介紹
-description: Work in progress...
+title: 本週主題
 icon: Hand
 ---
 
-Work in progress...
+
+本週課程將深入探討 Docker 的進階概念與應用，包括 Docker Registry、Docker Compose 多服務協作，以及通過 SSH 進行遠端部署操作。我們將在上週 Todo App 的基礎上，學習如何將應用程式部署到遠端伺服器環境，為同學提供更完整的 DevOps 實務經驗。
+
+關於上週內容的重點回顧，請參考[上週回顧](/docs/week2/review-week1)頁面，該頁面提供了 Git、Docker、測試和 CI/CD 的關鍵概念和指令速查表。
+
+## 課程大綱
+
+1. [**Docker 進階概念**](/docs/week2/docker-registry)
+   - Docker Registry：將映像檔上傳至 Docker Hub 或私有 Registry
+   - 版本標籤管理：Tag、版本號規劃
+   - 實作：把上週完成的 Todo App 映像檔推送至 Docker Hub 或自架 Registry
+
+2. [**Docker Compose 與多服務協作**](/docs/week2/docker-compose)
+   - docker-compose.yml 基本結構與配置
+   - Todo App 進階範例：前端容器 + 後端容器 + 資料庫容器 (MongoDB) 的組合
+   - 實作：在本機使用 docker-compose up，檢查多服務是否正常協作
+   - Docker Swarm & Stack：零停機部署簡介
+
+3. [**SSH 與遠端部署操作**](/docs/week2/ssh-deploy)
+   - 基本 SSH 指令與私鑰/公鑰設定
+   - 遠端伺服器（如 Ubuntu server）環境介紹
+   - 伺服器基本操作（Linux 常用指令）
+   - 實作：將 Todo App 部署至遠端伺服器
+
+4. [**雲端原生簡介**](/docs/week2/cloud-native)
+   - 雲端原生概念與原則
+   - 微服務架構與容器協作
+   - 容器編排與服務網格
+   - 實際生產環境部署考量
+
+5. **課堂練習與討論**
+   - 容器版本與標籤規劃
+   - [常見問題解答與實作指引](./qa-discussion)
+   - 同學分組嘗試將 Todo App 部署到遠端測試環境
+   - 針對 Docker Registry、Docker Compose、SSH 常見問題進行討論與答疑
+   - 預告下週課程進度
+
+## 注意事項
+
+- 本週實作將需要使用 Docker Hub 帳號，請預先註冊
+- 遠端部署實作時需要注意端口衝突問題，請根據分配的端口範圍進行配置
+- 部署過程中遇到問題，請參考 FAQ 或向舉手向助教求助
