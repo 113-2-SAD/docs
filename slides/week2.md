@@ -18,13 +18,17 @@ footer: "系統設計與分析 SAD 113-2"
 ### 上週 (Week 12) 重點 
 Git 版本控制與 GitHub 協作, Docker 基礎：Dockerfile, Image, Container, 自動化測試：單元測試 (Jest), E2E 測試 (Playwright), CI/CD 概念與 GitHub Actions 實作
 
+
+---
+
 ### 本週 (Week 13) 議程
-- **Docker Compose**：為什麼需要？如何使用？
-- `docker-compose.yml` 檔案結構與常用指令
-- **實作**：使用 Docker Compose 運行 Todo App (前後端)
-- **雲端原生 (Cloud Native)** 簡介
-- **實作**：將 Todo App 部署到工作站伺服器 (模擬雲端部署)
-- 伺服器基本操作與應用程式管理
+- **Docker 進階概念**：Why Registry? Types of Registries (Docker Hub, GitHub CR, Cloud CRs)
+- **Docker Compose**：多服務協作, `docker-compose.yml` (Structure, Example, Common Configs, Q&A)
+- **實作**：使用 Docker Compose 運行 Todo App
+- **Docker Swarm & Stack**：零停機部署, Architecture, Updates, Commands
+- **SSH 與遠端部署**：SSH Keys, `scp`, Remote Commands, Server Ops
+- **實作**：將 Todo App 部署到遠端伺服器
+- **雲端原生 (Cloud Native)**：Concepts, Goals, Ecosystem, Real-world Considerations
 
 ---
 
@@ -231,14 +235,56 @@ Git 版本控制與 GitHub 協作, Docker 基礎：Dockerfile, Image, Container,
 
 ---
 
-# Docker Compose
-
-<!-- You can add a Docker Compose logo here if you have one -->
-<!-- Example: <img src="path/to/docker-compose-logo.png" alt="Docker Compose Logo" height="200px" /> -->
-
-## 為什麼需要 Docker Compose？
+# Docker 進階概念：Registry 與映像檔管理
 
 ---
+
+## Docker Registry 介紹
+
+**Docker Registry** 是一個儲存和分發 Docker 映像檔的服務。
+- 允許開發者共享和管理容器映像檔。
+- 兩種類型：
+    1.  **公開 Registry**：如 Docker Hub。
+    2.  **私有 Registry**：自行架設或使用雲服務 (GitHub CR, AWS ECR etc.)。
+
+### Docker Hub
+- Docker 官方的公開 Registry ([hub.docker.com](https://hub.docker.com/))。
+- 大量現成映像檔可供使用。
+- 僅提供一個免費私有 Repository。
+
+---
+
+### GitHub Container Registry
+
+GitHub 的私有 Registry，可以跟 GitHub 的 Repository 整合。免費、私有，但有容量限制。
+
+### 其他雲端 Registry
+
+- AWS ECR (Elastic Container Registry)
+- Azure Container Registry
+- Google Container Registry
+
+---
+
+## 為什麼需要 Registry？
+
+很多現代的 CI/CD 流程並不會直接在本地建置並部署，而是會：
+1.  **遠端建置 (Remote Build)**：CI 伺服器 (e.g., GitHub Actions runner) 建置 Docker 映像檔。
+2.  **推送至 Registry (Push to Registry)**：將建置好的映像檔推送到一個中央 Registry (Docker Hub, GitHub CR, etc.)。
+3.  **從 Registry 部署 (Deploy from Registry)**：部署腳本或工具在目標伺服器上從 Registry 拉取 (pull) 指定版本的映像檔並運行。
+
+**好處**：版本控制、分享、部署一致性、解耦建置與部署環境。
+
+---
+
+# Docker Compose
+
+<img src="docker-compose-mem.png" alt="Docker Compose Meme" height="500" />
+
+
+---
+
+## 為什麼需要 Docker Compose？
 
 ### 管理多容器應用的挑戰
 
@@ -286,78 +332,104 @@ Git 版本控制與 GitHub 協作, Docker 基礎：Dockerfile, Image, Container,
 - **`version`**：指定 Docker Compose 檔案格式的版本 (通常是 `'3.8'` 或類似)。
 - **`services`**：定義應用程式中的各個服務 (容器)。
   - 每個服務可以有自己的 `build` (使用哪個 Dockerfile 建置映像檔)、`image` (直接指定映像檔)、`ports` (連接埠映射)、`volumes` (用於持久化資料，例如資料庫的資料不能只活在容器內)、`environment` (環境變數)、`depends_on` (誰先啟動，例如資料庫需要先啟動，後端才能啟動)、`restart` (重啟策略，這個服務掛了要不要自動重啟) 等設定。
-- **`networks`**：服務之間要怎麼通訊。
+- **`networks`**：(可選) 自訂服務間的通訊網路。
+- **`volumes`**：(可選) 集中定義具名資料卷。
 
 ---
 
-### `docker-compose.yml` 範例 (概念)
+### `docker-compose.yml` 範例 (Todo App - SADo like)
 
 ```yaml
-# docker-compose.yml
-version: '3.8' # 指定 Compose 檔案版本
+# docker-compose.yml (SADo 專案結構範例)
+version: '3.8'
 
-services: # 定義所有服務
-  frontend: # 前端服務名稱
+services:
+  frontend: # 前端服務
     build:
-      context: ./frontend # Dockerfile 所在路徑
+      context: ./apps/frontend # Dockerfile 所在路徑
       dockerfile: Dockerfile # 可選，預設為 Dockerfile
     ports:
       - "3000:3000" 
-    depends_on: 
+    environment: # 設定環境變數給前端
+      - NEXT_PUBLIC_API_URL=http://backend:5000/api
+    depends_on: # frontend 依賴 backend
       - backend
-    environment:
-      - REACT_APP_API_URL=http://backend:8080/api 
-    # volumes:
-      # - ./frontend/src:/app/src # 開發時掛載程式碼以實現熱重載
-    networks:
-      - app-network
-```
-
-----
-
-```yaml
-  backend: # 後端服務名稱
-    build: ./backend
-    ports:
-      - "8080:8080" 
-    volumes: 
-      - backend_data:/app/data # 範例：掛載持久化資料
-    environment:
-      - DATABASE_URL=postgres://user:password@db:5432/mydb
-      - NODE_ENV=development
-    networks:
-      - app-network
-      - db-network # 後端可以同時連接到應用網路和資料庫網路
-    restart: unless-stopped # 設定重啟策略
+    restart: always
 ```
 ---
-
 ```yaml
-  db: # 資料庫服務
-    image: postgres:13 
-    ports: 
-      - "5432:5432" # 開發時可映射，生產環境通常不對外暴露
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydb
-    volumes:
-      - postgres_data:/var/lib/postgresql/data # 持久化資料庫數據
-    networks:
-      - db-network # 資料庫僅連接到資料庫網路
+# (續) docker-compose.yml
+  backend: # 後端服務
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000" 
+    environment: # 設定環境變數給後端
+      - MONGODB_URI=mongodb://mongo:27017/todo
+      - PORT=5000
+    depends_on: # backend 依賴 mongo
+      - mongo
+    restart: always
+
+  mongo: # 資料庫服務
+    image: mongo:latest # 直接使用官方 MongoDB 映像檔
+    ports: # 開發時可映射，生產通常不對外
+      - "27017:27017" 
+    volumes: # 持久化資料庫數據
+      - todo-db-data:/data/db
     restart: always
 
 volumes: # 定義具名資料卷
-  postgres_data:
-  backend_data:
-
-networks: # 定義自訂網路
-  app-network:
-    driver: bridge
-  db-network:
-    driver: bridge
+  todo-db-data: 
+    # driver: local (預設)
 ```
-> **提示**：開發環境與生產環境的 `docker-compose.yml` 可能會有所不同 (例如使用 `docker-compose.override.yml` 來擴展基礎配置)。
+> **提示**：服務名稱 (`frontend`, `backend`, `mongo`) 會被用作 DNS 名稱，讓容器間可以互相訪問，例如後端的 `MONGODB_URI` 使用 `mongo` 作為主機名。
+
+---
+
+## `docker-compose.yml` 常用配置
+
+- **`image: <name>:<tag>`**: 指定要使用的 Docker 映像檔。
+- **`build: ./path`** 或 **`build: { context: ./path, dockerfile: Dockerfile.dev }`**: 從 Dockerfile 建置映像檔。
+- **`ports: ["host_port:container_port"]`**: 映射主機與容器端口。
+- **`expose: ["container_port"]`**: 僅在內部網路暴露端口，不映射到主機。
+- **`environment: ["KEY=VALUE", "ANOTHER_KEY"]`**: 設定環境變數。
+- **`env_file: ./.env`**: 從 `.env` 檔案讀取環境變數。
+
+---
+
+- **`volumes: ["host_path:container_path", "named_volume:/data"]`**: 掛載資料卷。
+- **`depends_on: ["service_name"]`**: 定義服務啟動依賴順序 (但不保證服務完全就緒)。
+- **`restart: "no" | "always" | "on-failure" | "unless-stopped"`**: 設定容器重啟策略。
+- **`command: ["executable", "param1", "param2"]`**: 覆蓋容器預設的啟動命令。
+- **`networks: ["network_name"]`**: 將服務連接到指定網路。
+
+---
+
+## Docker Compose Q&A Highlights
+
+**Q: 如何確保服務 B 在服務 A 完全啟動後才啟動？**
+A: `depends_on` 只管啟動順序，不管就緒。
+   - **Healthcheck**: 在 `docker-compose.yml` 中為依賴服務 (如資料庫) 定義健康檢查。
+     ```yaml
+     db:
+       image: postgres
+       healthcheck:
+         test: ["CMD-SHELL", "pg_isready -U postgres"]
+         interval: 5s
+         timeout: 5s
+         retries: 5
+     ```
+   - **Wait Script**: 使用如 `wait-for-it.sh` 或類似腳本在應用程式啟動命令前檢查依賴服務是否可用。
+
+---
+
+**Q: 如何管理敏感資訊 (如 API Keys, DB Passwords)？**
+A: 不要寫死在 `docker-compose.yml` 或 Dockerfile！
+   - **`.env` 檔案**: Docker Compose 自動讀取專案根目錄的 `.env` 檔案。將 `.env` 加入 `.gitignore`。
+   - **Docker Secrets**: 更安全的方式，用於 Swarm 模式。
+   - **外部密鑰管理服務**: 如 HashiCorp Vault, Doppler (用於更複雜系統)。
 
 ---
 
@@ -389,58 +461,92 @@ networks: # 定義自訂網路
 
 ## 為什麼需要 Docker Swarm？
 
-想像一下，你的應用程式需要更新：
-- 如果直接停止舊版本再啟動新版本，會造成服務中斷
-- 如果有多個使用者同時使用，這會造成不好的體驗
-- 如果更新出問題，需要快速 Rollback
+當應用程式需要更高可用性、擴展性和零停機更新時，單純的 Docker Compose 可能不夠。
+- **服務中斷**：直接停止舊版再啟動新版會造成服務中斷。
+- **手動擴展困難**：難以應對突發流量。
+- **無自動故障轉移**：單點故障可能導致整個服務不可用。
 
-Docker Swarm 可以幫你實現：
-- 零停機時間更新（Downtime-free updates）
-- 自動負載平衡（Load balancing）
-- 故障自動轉移（Failover）
-- 服務自動擴展（Auto-scaling）
+**Docker Swarm 可以幫你實現：**
+- **零停機時間更新 (Downtime-free updates)**
+- **自動負載平衡 (Load balancing)**
+- **故障自動轉移 (Failover)**
+- **服務自動擴展 (Auto-scaling)**
 
 ---
 
 ## Docker Swarm 架構
 
+Docker Swarm 採用主從 (Manager/Worker) 架構：
+
 ```
-                    [Load Balancer]
+                    [Load Balancer (內建)]
                            │
                            ▼
-                    [Manager Node]
+                [Manager Node(s)]  (管理集群狀態、調度任務)
                            │
         ┌────────────┬────┴─────┬────────────┐
         ▼            ▼           ▼            ▼
 [Worker Node]  [Worker Node] [Worker Node] [Worker Node]
+  (運行容器)     (運行容器)    (運行容器)     (運行容器)
 ```
-
-當你要更新應用程式時：
-1. Swarm 會先啟動新版本的容器
-2. 確認新容器健康後，才關閉舊容器
-3. 如果新版本有問題，可以立即回滾
-4. 整個過程使用者無感
+- **Manager Nodes**: 負責編排和管理集群狀態、調度 Tasks。通常建議 3 或 5 個 Manager 以實現高可用 (Raft 共識)。
+- **Worker Nodes**: 運行應用程式容器 (Tasks)。
+- **Services**: 定義應用程式的期望狀態 (e.g., 運行哪個映像檔、多少副本、更新策略)。
+- **Tasks**: 分配給 Worker Node 的工作單位 (一個容器實例)。
 
 ---
 
-## 常用指令
+## Docker Swarm 如何更新？ (簡化)
+
+1.  使用者更新 Service 定義 (e.g., 新映像檔版本)。
+2.  Swarm Manager **逐步**啟動新版本的 Task (容器)。
+3.  同時，舊版本的 Task 仍然在處理請求。
+4.  Manager 監控新 Task 的健康狀態。
+5.  一旦新 Task 健康，Manager 就會逐步停止對應的舊 Task。
+6.  這個過程是滾動的 (rolling update)，確保服務不中斷。
+7.  如果新版本有問題，可以快速回滾 (rollback) 到舊版本。
+
+---
+
+## 常用指令 (Docker Swarm & Stack)
 
 ```bash
-# 初始化 Swarm
-docker swarm init
+# 初始化 Swarm (在第一個 Manager Node 上執行)
+docker swarm init --advertise-addr <MANAGER_IP>
 
-# 部署 stack（零停機更新）
-docker stack deploy -c docker-compose.yml todo-app
+# (在其他 Node 上) 加入 Swarm (作為 Worker 或 Manager)
+# docker swarm join --token <TOKEN> <MANAGER_IP>:<PORT> (指令由 init 提供)
 
-# 查看服務狀態
+# 部署/更新 Stack (使用 docker-compose.yml 檔案)
+# "stack" 是一組相關聯的 services
+docker stack deploy -c docker-compose.yml <stack_name> 
+# 例如: docker stack deploy -c docker-compose.yml todo-app
+
+# 查看運行的 Services
 docker service ls
-
-# 擴展服務數量（增加 Availability + Load Balancing）
-docker service scale todo-app_frontend=3
 ```
 
-> 雖然 Docker Swarm 可以處理基本的零停機部署，但在需要更複雜的部署策略時，可以考慮使用 Kubernetes。
+---
 
+```bash
+# 查看特定 Service 的 Tasks (容器)
+docker service ps <service_name>
+
+# 擴展/縮減 Service 的副本數量
+docker service scale <service_name>=<replicas>
+# 例如: docker service scale todo-app_frontend=3
+
+# 移除 Stack
+docker stack rm <stack_name>
+
+# 離開 Swarm (Worker node)
+docker swarm leave
+
+# 強制離開 Swarm (Manager node, 需謹慎)
+docker swarm leave --force
+```
+
+> **Stack vs Compose**: `docker-compose.yml` 檔案可以用於 `docker-compose up` (單機) 和 `docker stack deploy` (Swarm 集群)。Swarm 會忽略某些 Compose 不支援的選項，並可能添加 Swarm 特有的擴展。
 
 ---
 
@@ -455,27 +561,72 @@ docker service scale todo-app_frontend=3
 - 如果關掉電腦，服務就停了。
 - 如何讓其他人 (例如：使用者、團隊成員) 也能存取？
 
-**答案：將應用程式部署到一台公開的伺服器上！**
+**答案：將應用程式部署到一台公開的、持續運行的伺服器上！**
+這就是「雲端」部署的基礎。
 
 ---
 
 ## 簡介雲端原生 (Cloud Native)
 
-**雲端原生 (Cloud Native)** 是一種建構和執行應用程式的方法，旨在充分利用雲端運算環境的優勢，實現快速、可靠、可擴展的應用程式交付。
+**雲端原生 (Cloud Native)** 是一種建構和執行應用程式的方法，旨在**充分利用雲端運算環境的優勢**，實現快速、可靠、可擴展的應用程式交付。
 
-### 核心概念與目標
-- **容器化 (Containers)**：如 Docker，提供標準化的封裝與執行環境。
-- **微服務 (Microservices)**：將應用拆分為小型、獨立、可獨立部署的服務。
-- **持續整合/持續交付 (CI/CD)**：自動化建置、測試、部署流程。
-- **DevOps 文化**：強調開發與維運團隊的協作、溝通與共同責任。
-- **目標**：提升敏捷性 (Agility)、可擴展性 (Scalability)、彈性 (Resilience)、可觀測性 (Observability)。
+它不僅是將應用程式「搬到雲上」，而是從**架構設計、開發流程到維運管理**都圍繞雲的特性進行。
+
+### 雲端原生的目標
+- **敏捷性 (Agility)**：快速回應市場變化和用戶需求。
+- **可擴展性 (Scalability)**：輕鬆擴展以應對負載變化。
+- **彈性 (Resilience)**：系統能夠從故障中自動恢復。
+- **可觀測性 (Observability)**：深入了解系統運行狀態。
 
 ---
 
-### 更廣闊的雲原生生態 (未來展望)
-- **容器編排 (Orchestration)**：如 Kubernetes，自動化容器的部署、擴展、管理。
-- **服務網格 (Service Mesh)**：如 Istio, Linkerd，管理服務間通訊、安全、監控。
-- **無伺服器 (Serverless)**：如 AWS Lambda, Azure Functions，專注於程式碼邏輯，無需管理底層伺服器。
+## 雲端原生核心概念 (1/2)
+
+1.  **容器化 (Containerization)**
+    -   如 Docker，提供標準化的封裝與執行環境。
+    -   **優勢**：輕量、一致性 (開發/測試/生產)、隔離性、可移植性。
+    -   **技術**：Docker, containerd, CRI-O。
+
+2.  **微服務架構 (Microservices)**
+    -   將大型應用拆分為小型、獨立、可獨立部署的服務。
+    -   **優勢**：獨立開發與部署、技術多樣性、故障隔離、團隊自治。
+    -   每個服務專注特定業務功能。
+
+---
+
+## 雲端原生核心概念 (2/2)
+
+3.  **持續整合/持續交付 (CI/CD)**
+    -   自動化軟體交付和基礎設施變更的實踐。
+    -   **CI (持續整合)**：自動構建和測試程式碼變更。
+    -   **CD (持續交付/部署)**：自動將已驗證的程式碼部署到各環境。
+    -   **工具**：Jenkins, GitHub Actions, GitLab CI, CircleCI, ArgoCD (GitOps)。
+
+4.  **DevOps 文化**
+    -   強調開發 (Dev) 與維運 (Ops) 團隊的協作、溝通與共同責任。
+    -   **核心**：打破隔閡、自動化流程、共同責任、快速反饋、持續學習。
+
+---
+
+## 更廣闊的雲原生生態 (未來展望)
+
+1.  **容器編排 (Container Orchestration)**
+    -   自動化容器的部署、擴展、管理。
+    -   **領袖**：Kubernetes (K8s)。
+    -   **其他**：Docker Swarm, Amazon ECS/EKS, Azure AKS, Google GKE。
+    -   **功能**：自動部署/更新、自動擴展、負載均衡、服務發現、自我修復。
+
+---
+
+2.  **服務網格 (Service Mesh)**
+    -   為微服務架構提供統一的網絡通信層。
+    -   **功能**：流量管理 (路由、重試)、安全性 (mTLS、授權)、可觀測性 (指標、追蹤)。
+    -   **技術**：Istio, Linkerd, Consul Connect。
+
+3.  **無伺服器 (Serverless)**
+    -   進一步抽象底層基礎設施，開發者只需關注代碼邏輯。
+    -   **FaaS (函數即服務)**：AWS Lambda, Azure Functions, Google Cloud Functions。
+    -   **特性**：按使用付費、自動擴展、無運維負擔 (對開發者而言)、事件驅動。
 
 > 今天，我們將體驗「雲端原生」中最基礎的一步：**將我們的容器化應用部署到一台遠端伺服器上**。
 
@@ -512,27 +663,83 @@ docker service scale todo-app_frontend=3
 ### 連線指令
 ```bash
 ssh your_username@server_ip_address
+# 例如: ssh sad_groupX@sand.lu.im.ntu.edu.tw
 ```
-- `your_username`：登入伺服器的使用者名稱 (助教提供)。
-- `server_ip_address`：伺服器的 IP 位址 (助教提供)。
+- `your_username`：登入伺服器的使用者名稱。
+- `server_ip_address`：伺服器的 IP 位址或域名。
 
-> 第一次連線時，可能會詢問是否信任該主機的指紋，輸入 `yes` 即可。
-> 如果設定了 SSH Key，則不需要輸入密碼。否則，會提示輸入密碼。
-
+> 第一次連線時，可能會詢問是否信任該主機的指紋 (fingerprint)，輸入 `yes` 即可。
+> 如果已設定 SSH Key 並將公鑰加入伺服器的 `~/.ssh/authorized_keys`，則不需要輸入密碼。否則，會提示輸入密碼。
 
 ---
 
-# 設定 SSH 金鑰
+# 設定 SSH 金鑰 (複習與實踐)
 
-### 任務
-- 請依照教學文件指示，並跟隨助教的引導完成操作。
-- 設定 SSH 金鑰，並使用 SSH 連線到伺服器。
+### 為什麼用 SSH 金鑰？
+- **更安全**：比密碼更難破解。
+- **更方便**：設定後通常無需重複輸入密碼。
 
-### 提示
-- 自己電腦上運行 `ssh-keygen` 指令，生成 SSH 金鑰。
-- 使用 `ssh-copy-id` 指令，將公鑰複製到助教的伺服器上。
-- 同時伺服器會將公鑰加入 `~/.ssh/authorized_keys` 檔案中。
-- 下次連線時，就不需要輸入密碼。
+### 步驟
+1.  **在本機產生金鑰對 (如果還沒有)**：
+    ```bash
+    ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+    # 接受預設路徑 (~/.ssh/id_rsa), 可選是否設定 passphrase (增強私鑰保護)
+    ```
+
+---
+
+2.  **將公鑰複製到遠端伺服器**：
+    最簡單的方式是使用 `ssh-copy-id` (如果你的系統支援)：
+    ```bash
+    ssh-copy-id your_username@server_ip_address
+    # 輸入密碼完成複製
+    ```
+    如果沒有 `ssh-copy-id`，手動複製 (`~/.ssh/id_rsa.pub` 的內容) 到伺服器端的 `~/.ssh/authorized_keys` 檔案中。
+    ```bash
+    # 本機: 顯示公鑰內容並複製
+    cat ~/.ssh/id_rsa.pub 
+    
+    # 伺服器端: (需先用密碼登入一次)
+    mkdir -p ~/.ssh       # 確保目錄存在
+    chmod 700 ~/.ssh      # 設定正確權限
+    # 將複製的公鑰內容貼到下面檔案，一行一個公鑰
+    nano ~/.ssh/authorized_keys 
+    chmod 600 ~/.ssh/authorized_keys # 設定正確權限
+    ```
+---
+3.  **測試免密碼登入**：
+    ```bash
+    ssh your_username@server_ip_address
+    ```
+---
+
+## SSH 常用操作
+
+### 檔案傳輸 (SCP - Secure Copy)
+- **從本地複製檔案到遠端**：
+  ```bash
+  scp /path/to/local/file.txt your_username@server_ip_address:/remote/path/
+  ```
+- **從本地複製整個資料夾到遠端**：
+  ```bash
+  scp -r /path/to/local/directory your_username@server_ip_address:/remote/path/
+  ```
+
+---
+
+- **從遠端複製檔案到本地**：
+  ```bash
+  scp your_username@server_ip_address:/remote/path/file.txt /path/to/local/
+  ```
+- **從遠端複製整個資料夾到本地**：
+  ```bash
+  scp -r your_username@server_ip_address:/remote/path/directory /path/to/local/
+  ```
+
+### 在遠端執行單一指令
+```bash
+ssh your_username@server_ip_address "ls -la /tmp"
+```
 
 ---
 
@@ -576,23 +783,36 @@ ssh your_username@server_ip_address
 
 ## 重要「真實世界」考量 (簡述)
 
-我們今天的部署非常基礎，真實世界的雲端部署還需要考慮：
+我們今天的部署非常基礎，真實世界的雲端部署還需要考慮更多：
 
-- **安全性**：
-    - 防火牆設定 (只開放必要的 port，例如 `ufw` on Linux)。
-    - HTTPS 加密 (SSL/TLS 憑證，例如 Let's Encrypt)。
-    - 環境變數與密鑰管理 (例如 Vault, Doppler, .env 檔案配合 .gitignore)。
-    - 定期更新系統與軟體套件。
-    - 使用非 root 使用者執行應用程式。
-- **網域名稱 (Domain Name)**：用好記的網址 (如 `www.mytodoapp.com`) 而非 IP 位址，並設定 DNS 紀錄。
-- **資料庫持久化與備份**：確保資料庫資料在容器重啟後不會遺失，並定期備份。
-  
+- **安全性 (Security)**：
+    - **防火牆 (Firewall)**：設定 `ufw` (Linux) 或雲端防火牆規則，只開放必要的 ports (e.g., 80, 443, SSH)。
+    - **HTTPS 加密**：使用 SSL/TLS 憑證 (e.g., Let's Encrypt) 保護傳輸資料。
+    - **環境變數與密鑰管理**：使用 `.env` (配合 `.gitignore`)、Vault, Doppler, 或雲端 KMS。
+    - **定期更新**：更新系統與軟體套件，修補漏洞。
+    - **最小權限原則**：不使用 root 執行應用程式，細化使用者權限。
+    - **SSH 安全強化**：禁用密碼登入、更改預設端口、使用 Fail2Ban。
 ---
-
-- **監控與告警 (Monitoring & Alerting)**：追蹤應用程式效能 (APM)、錯誤、伺服器資源，並在出問題時通知 (例如 Prometheus, Grafana, Sentry)。
-- **日誌管理 (Logging)**：集中管理與分析應用程式及系統日誌 (例如 ELK Stack, Loki)。
-- **基礎設施即程式碼 (Infrastructure as Code, IaC)**：使用程式碼管理和配置基礎設施 (例如 Terraform, Ansible)。
-- **高可用性與擴展性 (High Availability & Scalability)**：設計系統以應對故障並能根據負載自動擴展。
+- **網域名稱 (Domain Name) & DNS**：
+    - 使用好記的網址 (e.g., `www.mytodoapp.com`) 而非 IP。
+    - 設定 DNS A 紀錄或 CNAME 紀錄指向伺服器 IP。
+- **資料庫管理 (Database Management)**：
+    - **持久化**：確保資料庫資料卷正確掛載且安全。
+    - **備份與還原**：設定定期備份策略 (e.g., `mongodump` for MongoDB)。
+    - **安全性**：限制資料庫存取、加密敏感資料。
+- **監控與告警 (Monitoring & Alerting)**：
+    - 追蹤應用程式效能 (APM)、伺服器資源 (CPU, RAM, Disk)、錯誤率。
+    - 設定告警機制，在出問題時通知 (e.g., Prometheus, Grafana, Sentry, Uptime Kuma)。
+---
+- **日誌管理 (Logging)**：
+    - 集中管理與分析應用程式及系統日誌。
+    - 工具：ELK Stack (Elasticsearch, Logstash, Kibana), Loki, Papertrail。
+- **基礎設施即程式碼 (Infrastructure as Code, IaC)**：
+    - 使用程式碼管理和配置基礎設施 (e.g., Terraform, Ansible, Pulumi)。
+    - 提高自動化、可重複性、版本控制能力。
+- **高可用性 (High Availability, HA) & 擴展性 (Scalability)**：
+    - 設計系統以應對單點故障 (e.g., 多副本、負載平衡)。
+    - 能夠根據負載自動或手動擴展服務。
 
 > 這些是更進階的主題，未來有機會可以深入學習。
 
@@ -601,20 +821,22 @@ ssh your_username@server_ip_address
 ## 總結與下一步
 
 ### 本週回顧 (Week 13)
-- **Docker Compose**：簡化多容器應用管理。
-  - `docker-compose.yml` 的撰寫。
-  - `docker-compose up`, `down`, `logs`, `ps` 等指令。
-- **初探雲端部署**：
-  - SSH 連線到遠端伺服器。
-  - 在伺服器上使用 Git 和 Docker Compose 部署應用。
-  - 透過公網 IP 存取應用。
+- **Docker 進階概念**：了解為何需要 Registry，以及不同 Registry 的類型 (Docker Hub, GitHub CR, Cloud Provider Registries)。
+- **Docker Compose**：簡化多容器應用管理 (`docker-compose.yml` 結構與常用配置, SADo 範例, 服務依賴, Q&A)。
+- **Docker Swarm & Stack**：初步了解集群管理、零停機更新、負載平衡、擴展概念、架構與常用指令。
+
+---
+
+- **SSH 與遠端部署**：SSH 金鑰設定與管理, `scp` 檔案傳輸, 遠端指令執行, 在伺服器上使用 Git 和 Docker Compose 部署應用。
+- **雲端原生 (Cloud Native)**：核心概念 (容器, 微服務, CI/CD, DevOps), 目標 (敏捷, 擴展, 彈性, 可觀測), 生態系統簡介 (編排, 服務網格, 無伺服器)。
+- **實際部署考量**：安全性、網域名稱、資料庫、監控、日誌、IaC。
 
 ---
 
 ### 下一週 (Week 14) 預告
-- **資料庫選型**：介紹各種不同的資料庫，帶大家理解技術選型與架構設計的大概念。
-- **OpenAPI**：API 文件自動化生成，現代化 API 開發流程與 Best Practices。
-- 實作基本的 API 文件，並使用 Postman 測試 API。
+- **資料庫選型**：介紹各種不同的資料庫 (SQL vs NoSQL, 常用資料庫如 PostgreSQL, MySQL, MongoDB, Redis)，帶大家理解技術選型與架構設計的大概念。
+- **OpenAPI (Swagger)**：API 文件標準與自動化生成，現代化 API 開發流程與 Best Practices。
+- **實作**：使用工具撰寫基本的 OpenAPI 文件，並使用 Postman/Insomnia 測試 API。
 
 ---
 
