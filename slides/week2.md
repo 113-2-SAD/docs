@@ -2,6 +2,7 @@
 marp: true
 paginate: true
 footer: "系統設計與分析 SAD 113-2"
+lang: zh-TW
 ---
 
 # 系統設計與分析 SAD 113-2
@@ -17,6 +18,8 @@ footer: "系統設計與分析 SAD 113-2"
 
 ### 上週 (Week 12) 重點 
 Git 版本控制與 GitHub 協作, Docker 基礎：Dockerfile, Image, Container, 自動化測試：單元測試 (Jest), E2E 測試 (Playwright), CI/CD 概念與 GitHub Actions 實作
+
+> 我們也根據上週的回饋，將實作內容改為助教引導式的實作，讓大家能夠更輕鬆地跟上進度。
 
 
 ---
@@ -575,6 +578,8 @@ docker swarm leave --force
 
 ## 雲端原生 (Cloud Native)
 
+<img src="cloud-native-meme.png" alt="Cloud Native" height="500" />
+
 ---
 
 ## 從本地到雲端：為什麼要部署到伺服器？
@@ -800,7 +805,6 @@ ssh your_username@server_ip_address "ls -la /tmp"
 
 ### 跟著做
 - 請依照教學文件指示，並跟隨助教的引導完成操作。
-- **點名**：瀏覽器成功顯示從伺服器運行的 Todo App 畫面，以及伺服器上 `docker-compose ps` 的輸出。
 
 ---
 
