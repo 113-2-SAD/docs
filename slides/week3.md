@@ -485,6 +485,7 @@ components:
 ### Code-First 優點
 - 開發速度快，適合快速迭代
 - 程式碼即文件，減少重複工作
+- AI 輔助提升開發效率與文件生成品質
 - 適合小型團隊或原型開發
 - 框架自動生成文件
 
@@ -494,20 +495,22 @@ components:
 - 混合模式：先 Code-First 快速驗證，再轉 Design-First
 
 ---
-# 實作時間：API 文件與測試
-
-1. 撰寫 **Todo App** OpenAPI 描述檔（`todo.yaml`）。
-2. 啟動 **Swagger UI** 本地服務，確認文件與效能。
-3. 使用 **Postman** 匯入 `todo.yaml`，執行 GET/POST/PUT/DELETE 測試。
-4. 根據測試結果，回到 OAS 修正合約再迭代。
-
----
 # 總結 (Week 14)
 
 - **資料庫選型**：理解 SQL vs NoSQL 差異、常見資料庫與選型要點。
 - **進階概念**：Sharding、Replication、Caching、CAP、Indexing。
 - **案例**：Discord 擴展之路。
 - **OpenAPI**：設計優先、工具生態與實作流程。
+
+---
+
+# 期末專案提醒
+
+---
+
+# AMA (Ask Me Anything)
+
+> 有任何問題都可以問我，我會盡量回答
 
 ---
 # Q & A
