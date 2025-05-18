@@ -1,7 +1,7 @@
 {
   "root": true,
-  "title": "Week 1",
-  "description": "Week 1",
+  "title": "第一週",
+  "description": "版控、容器化與測試",
   "icon": "Dice1",
   "pages": ["index", "getting-started", "git", "docker", "test-plan", "unit-tests", "manual-tests", "e2e-tests", "github"]
 }

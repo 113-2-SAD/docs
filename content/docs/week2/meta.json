@@ -1,7 +1,7 @@
 {
   "root": true,
-  "title": "Week 2",
-  "description": "Week 2",
+  "title": "第二週",
+  "description": "容器編排與部署",
   "icon": "Dice2",
   "pages": ["index", "review-week1", "docker-registry", "docker-compose", "cloud-native", "ssh-deploy", "qa-discussion"]
 }

@@ -1,0 +1,196 @@
+---
+title: RESTful API 基礎
+description: 理解 REST 的原則、HTTP 方法，以及設計簡潔有效 RESTful API 的最佳實踐。
+icon: Globe
+---
+# RESTful API 是什麼？
+
+在我們深入探討 OpenAPI 之前，先來了解一下 RESTful API 的基本概念。
+
+> **想像一下**：你是一位顧客（客戶端 Client，例如你的手機 App 或瀏覽器），想跟一間餐廳（伺服器 Server）點餐或查詢菜單。RESTful API 就是這間餐廳提供給你的「標準化服務流程和溝通方式」。你知道可以用特定的「動作」（HTTP 方法）來跟特定的「東西」（資源 URI）互動，並且會得到特定格式的「回覆」（JSON/XML）。
+
+<Callout type="info">
+### RESTful API 簡介
+REST (Representational State Transfer) 是一種設計 Web 服務的架構**風格**，它利用標準 HTTP 方法操作帶有唯一 URI 的「資源」，並以 JSON 或 XML 等格式回傳資源的「表述」。核心在於無狀態通訊和統一介面。
+</Callout>
+
+## REST 核心原則
+
+REST (Representational State Transfer) 是一種設計 Web 服務的架構風格，不是一個嚴格的標準或協定，而是一組指導原則。主要原則有：
+
+*   **資源 (Resources)**：系統中的所有東西都可以被視為「資源」，例如一個用戶、一篇部落格文章、一張圖片、一門課程。每個資源都有一個唯一的識別符，就是它的 URI (Uniform Resource Identifier)。
+    *   **學生範例**：
+        *   `/students` (代表所有學生的集合)
+        *   `/students/123` (代表學號為 123 的特定學生)
+        *   `/courses` (代表所有課程的集合)
+        *   `/courses/CS101/assignments` (代表 CS101 課程的所有作業)
+        *   `/courses/CS101/assignments/hw1` (代表 CS101 課程的第一份作業)
+*   **表述 (Representations)**：當客戶端存取一個資源時，伺服器回傳的是該資源的「表述」，而不是資源本身。這個表述通常是 JSON 或 XML 格式，但也可能是 HTML、圖片等。客戶端和伺服器可以透過內容協商 (Content Negotiation) 來決定使用哪種格式。
+    *   **例如**：請求 `/students/123` 可能會得到如下 JSON 表述：
+        ```json
+        {
+          "id": "123",
+          "name": "陳同學",
+          "major": "資訊工程",
+          "email": "student123@example.com"
+        }
+        ```
+*   **狀態轉移 (State Transfer)**：客戶端透過操作資源的表述來改變伺服器上資源的狀態。例如，更新一個學生的 email，就是改變了該學生資源的狀態。
+*   **統一介面 (Uniform Interface)**：這是 REST 的核心。它包含幾個子约束：
+    *   **資源標識** (Identification of resources)：即使用 URI 來標識資源。
+    *   **透過表述操作資源** (Manipulation of resources through representations)：客戶端得到的表述中應包含足夠的資訊來修改或刪除該資源。
+    *   **自描述訊息 (Self-descriptive messages)**：每個請求和回應都應包含足夠的資訊讓對方理解，例如使用標準的 HTTP 方法、狀態碼、以及指明表述格式的媒體類型 (Media Type，如 `application/json`)。
+    *   **HATEOAS (Hypermedia as the Engine of Application State)**：客戶端在取得資源表述時，伺服器應提供相關操作的連結 (超媒體)，讓客戶端可以藉此導航到其他資源或執行其他動作。這使得 API 更具探索性。
+*   **無狀態 (Stateless)**：從客戶端到伺服器的每個請求都必須包含理解該請求所需的所有資訊。伺服器不會儲存任何關於客戶端先前請求的上下文 (Session 狀態)。
+    *   **好處**：簡化伺服器設計、提高可擴展性 (因為任何伺服器都可以處理任何請求)、提升可靠性。
+    *   **如果需要狀態怎麼辦？** 通常由客戶端自己維護，並在每次請求時帶上，例如透過 HTTP Headers (如 Authorization token)。
+
+<Callout type="info">
+### REST 的主要原則
+1.  **資源 (Resources)**：以 URI 標識。
+2.  **表述 (Representations)**：資源的 JSON/XML 等格式呈現。
+3.  **狀態轉移 (State Transfer)**：透過操作表述改變伺服器狀態。
+4.  **統一介面 (Uniform Interface)**：包括資源標識、透過表述操作、自描述訊息、HATEOAS。
+5.  **無狀態 (Stateless)**：伺服器不保存客戶端會話狀態。
+</Callout>
+
+## HTTP 方法與 RESTful API
+
+RESTful API 常見使用 HTTP 方法來表達對資源的操作，這通常被稱為 CRUD 操作 (Create, Read, Update, Delete)：
+
+| HTTP 方法 | CRUD 操作 | 描述                                                                 | 是否冪等 (Idempotent) | 學生場景範例 (以 `/students` 資源為例)                                                                 |
+| --------- | --------- | -------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET`     | Read      | 讀取資源的表述。                                                       | 是                    | `GET /students` (取得所有學生列表) `GET /students/123` (取得學號123的學生資料)                     |
+| `POST`    | Create    | 在指定的資源集合下新增一個資源。通常用於建立子資源。                   | 否                    | `POST /students` (新增一位學生，請求的 body 中包含學生資料)                                               |
+| `PUT`     | Update    | **完整更新**或取代目標資源的全部資料。如果資源不存在，可以選擇建立它。 | 是                    | `PUT /students/123` (完整更新學號123的學生資料，請求 body 中是該生的完整新資料)                         |
+| `PATCH`   | Update    | **部分更新**目標資源的資料。                                           | 否 (通常)             | `PATCH /students/123` (只更新學號123學生的 email，請求 body 中可能只有 `{"email": "new@example.com"}` ) |
+| `DELETE`  | Delete    | 刪除指定的資源。                                                       | 是                    | `DELETE /students/123` (刪除學號123的學生)                                                             |
+
+<Callout type="info">
+### HTTP 方法與冪等性
+RESTful API 使用 HTTP 方法 (GET, POST, PUT, PATCH, DELETE) 對應 CRUD 操作。
+- **GET (讀取)**: 冪等。
+- **POST (建立)**: 非冪等。
+- **PUT (完整更新/取代)**: 冪等。
+- **PATCH (部分更新)**: 通常非冪等，取決於操作性質。
+- **DELETE (刪除)**: 冪等。
+理解冪等性（多次相同請求產生相同效果）對設計可靠的 API 很重要。
+</Callout>
+
+## 為何選擇 RESTful API？
+
+*   **簡單**：基於 HTTP 標準，易於理解和使用。
+*   **可擴展**：無狀態設計使得系統更容易水平擴展。
+*   **靈活**：支援多種資料格式 (JSON, XML 等)。
+*   **通用**：幾乎所有程式語言和平台都有支援 HTTP 的函式庫，跨平台支援良好。
+*   **整合**：與 Web 技術 (如快取、CDN) 相容性好。
+
+> RESTful API 是設計現代 Web App 和服務的強大且流行的框架。為了確保大型或多人協作的 API 設計能有一致的理解和規範，OpenAPI (曾被稱為 Swagger) 這樣的工具和標準就應運而生了。
+
+<Callout type="info">
+### RESTful API 的優勢
+RESTful API 因其**簡單性、可擴展性、靈活性、通用性及與 Web 技術的良好整合**而廣受歡迎。它為現代應用程式提供了一個強大且成熟的設計模式。
+</Callout>
+
+## RESTful API 設計：常見的 好與壞 實踐
+
+一個好的 API 設計能讓開發者用起來心情愉悅，一個壞的 API 設計則會讓人想砸電腦。以下是一些常見的最佳實踐 (和反模式)：
+
+### 1. URI 設計：名詞而非動詞，階層清晰
+
+*   **資源用名詞 (Nouns)，HTTP 方法表示動作 (Verbs)**
+    ❌ **壞**: `/getUsers`, `/createProduct`, `/updateStudentEmail` (把動作寫在 URI 裡)
+    ✅ **好**: `GET /users`, `POST /products`, `PATCH /students/{studentId}` (URI 是資源，HTTP 方法是動作)
+    > **學生理解**：壞的就像是按鈕名稱寫成「點我取得使用者列表」。好的就像是，有一個「使用者列表」的牌子，然後你有一個「取得」的動作可以對它做。
+
+*   **使用階層結構表示關聯**
+    ❌ **壞**: `/users/123/orders/456/items/789` (可能太深，不易閱讀)
+    ✅ **好**: `/users/123/orders` (取得某用戶的所有訂單)
+    ✅ **好**: `/orders/456/items` (取得某訂單的所有品項)
+    > 保持 URI 的簡潔和可讀性。通常建議 URI 路徑的階層不要超過2-3層。
+
+### 2. URI 命名風格：小寫與連字號
+
+❌ **壞**: `/UserSettings`, `/product_details`, `/StudentCourseEnrollments` (大小寫混用, 底線)
+✅ **好**: `/user-settings`, `/product-details`, `/student-course-enrollments` (統一小寫，單字間用連字號 `-` 分隔)
+> 這樣更符合 DNS 和 URL 的一般慣例，也更易讀。
+
+### 3. HTTP 狀態碼 (Status Codes)：正確表達結果
+
+伺服器應回傳標準的 HTTP 狀態碼來指示請求的結果。
+
+❌ **壞**: 任何錯誤都回傳 `200 OK`，然後在回應的 body 裡面用一個自訂欄位 (如 `{"success": false, "error_message": "..."}` ) 來表示錯誤。
+✅ **好**: 使用正確的狀態碼，例如：
+    *   `200 OK`：請求成功 (用於 `GET`, `PUT`, `PATCH` 成功)
+    *   `201 Created`：資源成功建立 (用於 `POST` 成功)，通常回應中會包含新資源的 URI。
+    *   `204 No Content`：請求成功，但回應 body 中沒有內容 (例如 `DELETE` 成功)。
+    *   `400 Bad Request`：客戶端請求語法錯誤或參數無效。
+    *   `401 Unauthorized`：客戶端未提供有效的身份驗證憑證。
+    *   `403 Forbidden`：客戶端已驗證身份，但沒有權限存取該資源。
+    *   `404 Not Found`：請求的資源不存在。
+    *   `500 Internal Server Error`：伺服器內部發生未預期的錯誤。
+> **學生理解**：狀態碼就像是餐廳服務生給你的回饋。「200」是「您的餐點來了！」，「201」是「您的特製餐點做好了，在這裡！」，「404」是「抱歉，您點的這道菜今天沒有喔。」
+
+### 4. 請求與回應 Body
+
+*   **`GET` 請求不應有 Request Body**：`GET` 請求的參數應該透過 Query String (URI 中 `?` 後面的部分，如 `/students?major=CS&year=3`) 傳遞。
+    > 因為 `GET` 設計上是可快取的，而 Request Body 的內容通常不會被視為快取鍵的一部分。
+*   **回應 Body 使用 JSON**：JSON 是目前 Web API 最主流的資料交換格式，因為它輕量、易讀、易於各種語言解析。
+
+### 5. 資源 URI 單複數：統一使用複數
+
+❌ **壞**: `/user/123` (單數), 但 `/products` (複數) → 不一致
+✅ **好**: `/users/123`, `/products` → 統一用複數表示資源集合。
+> 雖然 `/users/{id}` 中的 `{id}` 指向單一資源，但其「集合路徑」 `/users` 仍建議用複數，表示這是「users 這個集合」中的一個。
+
+### 6. 進階設計：篩選、排序、分頁、欄位選擇
+
+當資源集合很大時，一次回傳所有資料是不切實際的。
+
+❌ **壞**: `GET /students` 一次返回上萬筆學生資料，導致客戶端卡死或網路擁塞。
+✅ **好**: 提供彈性的查詢參數：
+    *   **篩選 (Filtering)**: `GET /students?major=CS&enroll_year=2023`
+    *   **排序 (Sorting)**: `GET /students?sort_by=gpa&order=desc` (按 GPA 降序排列)
+    *   **分頁 (Pagination)**: `GET /students?page=2&limit=50` (取得第2頁，每頁50筆)
+    *   **欄位選擇 (Field Selection)**: `GET /students?fields=id,name,email` (只回傳學生的 ID、姓名、Email)
+> 這樣可以讓客戶端只請求它需要的資料，優化效能，節省頻寬。
+
+<Callout type="info">
+### RESTful API 設計最佳實踐小結
+1.  **URI 設計**：使用名詞表示資源，HTTP 方法表示動作，階層清晰。
+2.  **命名風格**：URI 使用小寫字母與連字號 `-`。
+3.  **HTTP 狀態碼**：正確使用標準狀態碼表達請求結果。
+4.  **請求/回應 Body**：GET 請求不用 body，回應多用 JSON。
+5.  **資源 URI 單複數**：統一使用複數表示資源集合 (如 `/users`)。
+6.  **進階功能**：提供篩選、排序、分頁、欄位選擇等參數。
+</Callout>
+
+## 討論：一定要用 RESTful API 嗎？
+
+那如果我的 API 其實很複雜，不只是 CRUD？例如推薦系統需要複雜的演算法、搜尋引擎需要強大的查詢語法、訂單系統可能有多個步驟的流程…
+
+一定要用 RESTful API 嗎？
+
+> 當然不一定！REST 是一種風格，不是唯一的真理。現在也有很多其他流行的 API 架構風格：
+> *   **GraphQL**：由 Facebook 開發。允許客戶端精確指定它需要的資料，解決了 REST 中常見的 Over-fetching (請求過多不需要的資料) 和 Under-fetching (需要多次請求才能取得所有資料) 的問題。特別適合行動應用或前端需求多變的場景。
+> *   **gRPC**：由 Google 開發。是一個高效能、跨語言的 RPC (Remote Procedure Call) 框架。使用 Protocol Buffers 作為介面定義語言和訊息交換格式，通常基於 HTTP/2 傳輸。非常適合微服務之間的內部通訊，對效能要求高的場景。
+> *   **WebSocket**：用於建立持久性的雙向通訊通道，適合即時應用如聊天室、線上遊戲、股票行情等。
+
+**助教認為 (經驗分享)：**
+1.  **前端 (Web/App) 與後端溝通**：
+    *   大部分情況下，**RESTful API** 仍然是非常好的選擇，因為它成熟、生態完善、易於理解。
+    *   如果前端需要高度彈性的資料查詢，或者常常需要組合來自不同資源的資料，**GraphQL** 會是一個很棒的選擇，可以減少 API 請求次數，提升前端開發體驗。
+2.  **後端微服務之間溝通**：
+    *   如果對效能、低延遲、強型別有較高要求，**gRPC** 通常是首選。
+    *   如果服務間的互動不那麼頻繁，或者需要簡單易懂的介面，**RESTful API** 也可以勝任。
+
+> **結論**：選擇哪種 API 風格取決於你的具體需求、團隊熟悉度、效能考量等。沒有絕對的好壞，只有適不適合。
+
+<Callout type="info">
+### API 風格的選擇
+雖然 RESTful API 應用廣泛，但並非唯一選擇。針對特定需求，可以考慮：
+- **GraphQL**：前端需求彈性高、需精確獲取資料時。
+- **gRPC**：微服務間通訊、高效能、低延遲、強型別需求時。
+- **WebSocket**：即時雙向通訊場景。
+選擇最適合專案需求的 API 風格至關重要。
+</Callout> 

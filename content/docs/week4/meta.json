@@ -1,7 +1,0 @@
-{
-  "root": true,
-  "title": "Week 4",
-  "description": "Week 4",
-  "icon": "Dice4",
-  "pages": ["index", "getting-started"]
-}

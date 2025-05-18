@@ -1,7 +1,14 @@
 {
   "root": true,
-  "title": "Week 3",
-  "description": "Week 3",
+  "title": "第三週",
+  "description": "資料庫與 API 設計",
   "icon": "Dice3",
-  "pages": ["index", "getting-started"]
+  "pages": [
+    "index",
+    "database-selection",
+    "advanced-database-concepts",
+    "discord-case-study",
+    "restful-api",
+    "openapi"
+  ]
 }

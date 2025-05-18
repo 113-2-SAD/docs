@@ -1,0 +1,335 @@
+---
+title: OpenAPI (Swagger)
+description: 學習如何使用 OpenAPI 來定義、記錄和測試 API，遵循設計優先的方法。
+icon: FileJson
+---
+
+> **前情提要**：我們在上一節課學習了 RESTful API 的設計原則。但想像一下，如果一個大型專案有很多 API，每個 API 又有很多細節（路徑、參數、請求格式、回應格式、錯誤碼…），如果沒有一份清晰、標準化的「說明書」，開發者（尤其是前端和後端協作時）很容易就會搞混或誤解，導致溝通不良、整合困難。
+> OpenAPI 就是來解決這個問題的！
+
+<Callout type="info">
+### OpenAPI 核心價值
+OpenAPI Specification (OAS) 是一套標準格式 (通常用 YAML/JSON)，用於**描述與定義 RESTful API**。它如同 API 的「藍圖」或「合約」，旨在促進團隊共識、實現自動化 (如產生文件、SDK、伺服器骨架) 並支持「設計優先」的開發方法。
+</Callout>
+
+## OpenAPI 是什麼？
+
+*   **OpenAPI Specification (OAS)**：一套用來描述、定義 RESTful API 的**標準格式**。可以把它想像成 API 的「藍圖」或「合約」。這份文件通常用 YAML 或 JSON 格式編寫。
+    *   **YAML (YAML Ain't Markup Language)**：一種人類可讀的資料序列化語言，常用於配置文件。它的語法比 JSON 更簡潔一些（例如用縮排表示層級，少了許多括號和引號）。
+    *   **JSON (JavaScript Object Notation)**：一種輕量級的資料交換格式，易於機器解析和生成，也相對易於人類閱讀。
+*   **核心理念**：**API = 合約 (API as a Contract)**。這份 OpenAPI 文件就是客戶端和伺服器之間的合約，明確規定了 API 的所有細節。這份合約應該是「單一事實來源 (Single Source of Truth)」，所有人（包括機器）都以它為準。
+*   **Swagger**：最早推動這套標準的工具集名稱。雖然標準後來改名為 OpenAPI Specification (OAS)，但「Swagger」這個名字因為太深入人心，現在通常泛指圍繞 OAS 的一系列工具，例如：
+    *   **Swagger Editor**：一個線上或本地的編輯器，可以讓你編寫和驗證 OpenAPI 文件。
+    *   **Swagger UI**：可以將 OpenAPI 文件自動渲染成互動式的 API 文件網頁，使用者可以直接在網頁上測試 API！
+    *   **Swagger Codegen**：可以根據 OpenAPI 文件自動生成多種程式語言的客戶端 SDK (軟體開發套件) 和伺服器端程式碼骨架 (Server Stubs)。
+
+> **學生比喻**：
+> *   **OpenAPI 文件** 就像一份非常詳細的「餐廳菜單兼點餐SOP」。菜單上清楚列出每道菜（API 端點）的名稱、價格（可能沒有）、食材（請求參數）、份量/照片（回應格式），以及可能的特殊情況（錯誤碼，例如「今日售完」是 404）。
+> *   **Swagger UI** 就像是這間餐廳提供的「互動式點餐平板」，你可以直接在上面看到菜色圖片、介紹，甚至模擬點餐看看會發生什麼事。
+> *   **Swagger Codegen** 就像是餐廳提供的「點餐小幫手 App (SDK)」，你用了這個 App，就可以很方便地用程式碼來點餐，不用自己拼湊複雜的點餐指令。
+
+<Callout type="info">
+### OpenAPI 與 Swagger
+- **OpenAPI Specification (OAS)**: 是 API 描述的**標準**。
+- **Swagger**: 是圍繞 OAS 的**工具集** (如 Editor, UI, Codegen)。
+OpenAPI 文件是 API 的「單一事實來源 (Single Source of Truth)」。
+</Callout>
+
+## 為何使用 OpenAPI？ (對我們開發者有什麼好處？)
+
+1.  **標準化 & 共識 (Standardization & Consensus)**：
+    *   **好處**：團隊成員（前端、後端、測試、文件撰寫人員）對 API 如何運作有共同的理解，大大減少溝通誤差和誤解。
+    *   **想像**：如果沒有標準，前端可能以為參數叫 `userID`，後端卻設計成 `user_id`，這樣一來一回 Debug 會浪費很多時間。
+2.  **自動化 (Automation)**：
+    *   **好處**：可以從 OpenAPI 文件自動產生：
+        *   **客戶端 SDK**：前端或App開發者不用再手刻 API 請求的程式碼，直接用產生好的 SDK 更快更不易出錯。
+        *   **伺服器端程式碼骨架 (Server Stubs)**：後端開發者可以基於這個骨架快速開始實作 API 邏輯，確保介面符合定義。
+        *   **API 測試腳本**：可以自動產生基本的 API 整合測試案例。
+    *   **結果**：節省大量重複性的開發和測試工作，讓開發者專注在核心業務邏輯。
+3.  **互動式 API 文件 (Interactive Documentation)**：
+    *   **好處**：透過 Swagger UI 或 Redoc 這類工具，可以把 OpenAPI 文件變成一個美觀、易用、且可以「即時試用 (Try-It-Out)」的 API 文件網站。
+    *   **對學生來說**：這超棒！你可以直接在文件上點幾下，填入參數，就能發送真實的 API 請求並看到回應，大大加速學習和理解 API 的過程。
+4.  **設計優先 (Design‑First Approach)**：
+    *   **好處**：鼓勵團隊在開始寫任何程式碼之前，先共同設計和審查 API 的規格 (OpenAPI 文件)。一旦規格確定，前後端就可以並行開發，前端甚至可以用 Mock Server (基於 OpenAPI 文件模擬 API 回應的假伺服器) 來開發，不用等待後端完成。
+    *   **結果**：降低後期修改 API 設計的成本和風險，減少返工。
+
+<Callout type="info">
+### 使用 OpenAPI 的主要優勢
+1.  **標準化與共識**：減少團隊溝通誤差。
+2.  **自動化**：自動產生客戶端 SDK、伺服器骨架、測試腳本，提升效率。
+3.  **互動式 API 文件**：透過 Swagger UI 等工具，讓 API 更易懂、易測。
+4.  **設計優先 (Design-First)**：鼓勵先設計再開發，降低風險，支持並行開發。
+</Callout>
+
+## 直接來看範例！
+
+最快的方式就是實際看看：[https://editor.swagger.io/](https://editor.swagger.io/)
+
+> 這個網站左邊是 YAML/JSON 格式的 OpenAPI 文件，右邊是即時渲染出來的 Swagger UI。你可以試著修改左邊的 YAML，看看右邊的 UI 會怎麼變化。網站也提供了一些預設的範例 (例如 PetStore API) 可以參考。
+
+## 文件結構總覽 (OpenAPI 3.x 版本)
+
+<Callout type="info">
+### OpenAPI 文件結構概覽
+一份標準的 OpenAPI (3.x) 文件主要包含：
+- `openapi`: OAS 版本。
+- `info`: API 基本資訊 (標題、版本、描述)。
+- `servers`: API 伺服器 URL 列表。
+- `tags`: API 端點分組標籤。
+- `paths`: **核心部分**，定義所有 API 路徑、HTTP 方法、參數、請求/回應內容。
+- `components`: 可共用的元件 (schemas, parameters, responses 等)，促進模組化與重用。
+- `security`: 全域安全設定。
+</Callout>
+
+一份 OpenAPI 文件 (通常是 `openapi.yaml` 或 `openapi.json`) 主要包含以下幾個部分：
+
+| Section      | 作用                                                                                                | 說明與範例                                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | 
+| `openapi`    | **OAS 版本號**                                                                                      | 指明這份文件遵循哪個 OpenAPI Specification 版本。例如：`openapi: 3.0.3`                                                                                |
+| `info`       | **API 的基本資訊**                                                                                  | 包含 API 的標題 (`title`)、版本號 (`version`)、描述 (`description`)、聯絡人資訊 (`contact`)、授權資訊 (`license`) 等。                                   |
+| `servers`    | **API 伺服器的 Base URLs**                                                                            | 定義 API 可以從哪些伺服器存取。可以有多個，例如開發環境、測試環境、正式環境的 URL。例如：`servers: - url: https://api.example.com/v1`                       |
+| `tags`       | **API 端點分組標籤** (非必需)                                                                           | 用來將不同的 API 路徑 (paths) 分組，方便在 Swagger UI 等工具中呈現和導覽。例如：`tags: - name: User - description: 使用者相關操作`                          |
+| `paths`      | **API 的所有路徑 (Endpoints)**                                                                        | 這是核心部分，定義了 API 的每個路徑、該路徑支援的 HTTP 方法 (GET, POST, PUT, DELETE 等)，以及每個方法的參數、請求內容、回應內容、安全性等。                |
+| `components` | **可共用的元件定義**                                                                                | 用來定義一些可以在多個地方重複使用的元件，例如： - `schemas`: 資料模型 (請求和回應的 body 結構) - `parameters`: 可共用的請求參數 (路徑參數、查詢參數、標頭參數、Cookie 參數) - `responses`: 可共用的回應 - `requestBodies`: 可共用的請求 body - `securitySchemes`: 安全性機制定義 (例如 API Key, OAuth2) - `headers`, `examples`, `links`, `callbacks` 等。這樣可以避免重複撰寫，讓文件更簡潔。 |
+| `security`   | **全域安全設定** (非必需)                                                                               | 定義套用到整個 API 的安全性需求。也可以在個別操作 (Operation，即某個 path 下的某個 HTTP method) 中覆寫或指定不同的安全性需求。                            |
+
+## YAML 範例片段 (一個簡單的 Todo API)
+
+<Callout type="info">
+### YAML 範例解讀
+此範例展示了一個 Todo API 的基本結構：
+- `info`, `servers`, `tags` 提供元數據和分組。
+- `paths` (`/todos`, `/todos/{todoId}`) 定義了端點及其操作 (GET, POST)。
+- 每個操作包含 `summary`, `description`, `operationId`, `requestBody` (POST), `parameters` (GET by ID), 和 `responses` (不同狀態碼對應的回應)。
+- `components.schemas` 定義了資料模型 (Todo, NewTodo, TodoList, Error)，並透過 `$ref` 在 `paths` 中重用。
+- `components.securitySchemes` 定義了 API Key 認證方式。
+</Callout>
+
+```yaml
+# 指定 OpenAPI 版本
+openapi: 3.0.0
+
+# API 基本資訊
+info:
+  title: Todo API (待辦事項 API)
+  description: 一個簡單的 API，用來管理待辦事項列表。
+  version: 1.0.0
+  contact:
+    name: SAD TA Team
+    email: sad_ta@example.com
+
+# API 伺服器位置
+servers:
+  - url: https://api.example.com/v1 # 正式環境
+    description: Production server
+  - url: http://localhost:3000/v1   # 開發環境
+    description: Development server
+
+# API 端點分組標籤
+tags:
+  - name: Todos
+    description: 待辦事項相關操作
+
+# API 路徑與操作定義
+paths:
+  /todos: # 路徑：/todos
+    get: # HTTP 方法：GET
+      tags:
+        - Todos # 這個操作屬於 Todos 標籤
+      summary: List all todos (列出所有待辦事項)
+      description: 取得目前所有的待辦事項列表。
+      operationId: listTodos # 操作的唯一識別 ID，方便程式碼產生工具使用
+      responses:
+        '200': # HTTP 狀態碼 200 的回應
+          description: OK (成功取得列表)
+          content:
+            application/json: # 回應內容的格式是 JSON
+              schema:
+                # 參考 components 中定義的 TodoList schema
+                $ref: '#/components/schemas/TodoList'
+    post: # HTTP 方法：POST
+      tags:
+        - Todos
+      summary: Create a todo (新增一個待辦事項)
+      requestBody:
+        description: 要新增的待辦事項內容
+        required: true
+        content:
+          application/json:
+            schema:
+              # 參考 components 中定義的 NewTodo schema (可能不包含 id)
+              $ref: '#/components/schemas/NewTodo'
+      responses:
+        '201':
+          description: Created (成功建立)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo' # 回傳建立好的 Todo (包含 id)
+        '400':
+          description: Bad Request (請求格式錯誤)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /todos/{todoId}: # 路徑：/todos/{todoId}，其中 {todoId} 是路徑參數
+    get:
+      tags:
+        - Todos
+      summary: Get a todo by ID (依 ID 取得特定待辦事項)
+      parameters:
+        - name: todoId # 參數名稱，要跟路徑中的 {todoId} 對應
+          in: path # 參數位置：路徑參數
+          required: true # 是否為必要參數
+          description: The ID of the todo to retrieve.
+          schema:
+            type: string # 參數的資料型態
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          description: Not Found (找不到該 ID 的待辦事項)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+# 可共用的元件定義
+components:
+  schemas:
+    # Todo 資料模型 (包含 id，通常是唯讀)
+    Todo:
+      type: object
+      properties:
+        id: 
+          type: string
+          format: uuid # 可以指定更精確的格式，例如 UUID
+          description: 待辦事項的唯一 ID。
+          readOnly: true # 通常 id 是伺服器產生，客戶端不可寫入
+        title:
+          type: string
+          description: 待辦事項的標題。
+          example: "完成 SAD 簡報"
+        isCompleted:
+          type: boolean
+          description: 是否已完成。
+          default: false # 預設值
+      required: # 必要欄位
+        - title
+
+    # NewTodo 資料模型 (用於新增時，可能不包含 id 或其他唯讀欄位)
+    NewTodo:
+      type: object
+      properties:
+        title:
+          type: string
+          description: 待辦事項的標題。
+        isCompleted:
+          type: boolean
+          description: 是否已完成。
+          default: false
+      required:
+        - title
+
+    # TodoList 資料模型 (Todo 陣列)
+    TodoList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Todo' # 陣列中的每個元素都是 Todo 型態
+    
+    # Error 資料模型 (用於錯誤回應)
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+      required:
+        - code
+        - message
+
+  # 安全性機制定義 (例如 API Key)
+  securitySchemes:
+    ApiKeyAuth: # 自訂的安全性機制名稱
+      type: apiKey # 類型是 API Key
+      in: header   # API Key 放在 HTTP Header 中
+      name: X-API-KEY # Header 的名稱是 X-API-KEY
+
+# 全域套用的安全性需求 (可以被個別操作覆寫)
+# security:
+#   - ApiKeyAuth: [] # 表示所有 API 都需要通過 ApiKeyAuth 驗證
+
+```
+
+> **$ref 是什麼？** `$ref` 是 JSON Reference 的語法，用來參考同一份文件或外部文件中的某個部分。在這裡，`$ref: '#/components/schemas/TodoList'` 表示參考到這份文件中 `components` 下 `schemas` 下的 `TodoList` 這個定義。這有助於重用和模組化。
+
+## Design-First vs Code-First API 開發
+
+在開發 API 時，有兩種主要的流程：
+
+### Design-First (設計優先)
+1.  **先設計 API**：團隊（後端、前端、PM）先一起討論並用 OpenAPI 文件把 API 的規格（路徑、參數、資料模型、回應等）都定義清楚，並達成共識。
+2.  **審查與確認**：確保 API 設計符合需求、易用、一致。
+3.  **產生程式碼/文件**：用 Swagger Codegen 等工具產生伺服器骨架、客戶端 SDK、互動式文件。
+4.  **並行開發**：後端基於骨架實作業務邏輯，前端基於 SDK 或 Mock Server (模擬伺服器) 開始開發介面。
+
+**Design-First 優點**：
+*   團隊在早期就能對 API 設計達成共識，減少後期修改的成本。
+*   前端可以更早開始開發，甚至在後端 API 完成前就能進行大部分 UI 開發 (使用 Mock Server)。
+*   OpenAPI 文件即是「合約」，是單一事實來源，減少溝通成本和誤解。
+*   非常有利於自動化測試和程式碼生成，提高開發效率和品質。
+*   適合較大型、較複雜、多人協作的專案，或者 API 需要提供給外部合作夥伴使用的情況。
+
+**生活化比喻**：蓋房子前，建築師先畫好詳細的藍圖（OpenAPI 文件），所有工人（前後端開發者）都依照藍圖施工。
+
+### Code-First (程式碼優先)
+1.  **先寫程式碼**：後端開發者先根據需求開始編寫 API 的實際程式碼邏輯。
+2.  **產生 API 文件**：在程式碼完成或開發到一定程度後，再透過某些框架的工具或註解 (Annotations) 來自動產生 OpenAPI 文件。
+
+**Code-First 優點**：
+*   對於後端開發者來說，開發速度可能比較快，因為他們可以直接開始寫熟悉的程式碼，適合快速迭代和原型開發。
+*   程式碼即是文件，減少了維護一份獨立的 OpenAPI 文件的「額外」工作 (雖然還是要寫好註解)。
+*   許多現代 Web 框架 (如 Spring Boot, FastAPI, NestJS) 都內建或有強大的社群套件支援從程式碼註解生成 OpenAPI 文件，AI 輔助工具也能提升開發效率與文件生成品質。
+*   適合小型團隊、內部 API、或需求變化非常快速的專案初期。
+
+**生活化比喻**：先開始蓋房子（寫程式碼），然後邊蓋邊畫/修改藍圖，或者蓋好後請人來測繪產生藍圖（自動生成文件）。
+
+<Callout type="info">
+### 兩種開發流程：Design-First vs Code-First
+**Design-First (設計優先)**：
+1.  先用 OpenAPI 文件定義 API 規格。
+2.  團隊審查確認。
+3.  產生程式碼骨架/SDK。
+4.  前後端並行開發。
+*優點*：早期共識、前端可提早開發 (用 Mock)、文件即合約、利於自動化。適合大型/複雜/多人協作的專案。
+
+**Code-First (程式碼優先)**：
+1.  後端先編寫 API 程式碼。
+2.  從程式碼 (透過註解等) 自動產生 OpenAPI 文件。
+*優點*：後端開發可能較快、程式碼即文件。適合小型/內部 API 或快速原型開發。
+</Callout>
+
+### 選擇建議：沒有絕對，看情況！
+
+*   **大型專案、公開 API、多人協作**：強烈建議 **Design-First**。它可以帶來更好的協作、更早發現設計問題、更一致的 API。
+*   **小型專案、內部 API、快速原型**：**Code-First** 可能更敏捷。但仍需注意保持程式碼註解的品質，以確保產生的文件準確。
+*   **混合模式 (Hybrid)**：有時團隊會先用 Code-First 快速搭建一個原型並驗證核心功能，然後再將其轉換為 Design-First 的流程，花時間把 OpenAPI 文件打磨得更完善，再以此為基礎進行後續的迭代和擴展。
+
+> **助教的經驗**：Design-First 初期可能感覺比較「慢」，因為需要花時間討論和撰寫規格文件。但「磨刀不誤砍柴工」，這份初期的投入往往能在專案中後期節省大量的溝通、整合和修改成本，尤其是當團隊規模變大或專案週期變長時。
+
+<Callout type="tip">
+### 如何選擇開發流程?
+- **Design-First**：推薦用於大型專案、公開 API 或多人協作，能確保前期共識與設計品質。
+- **Code-First**：適用於小型專案、內部 API 或追求快速原型驗證。
+- **混合模式**：初期 Code-First 驗證，後轉 Design-First 打磨。
+Design-First 的前期投入，長期來看能節省更多成本。
+</Callout>
+
+> **總結**：OpenAPI (Swagger) 提供了一套強大的工具和標準，讓 API 的設計、開發、文件撰寫和測試都更加規範和高效。無論你選擇 Design-First 還是 Code-First，理解並善用 OpenAPI 都會讓你的 API 開發之路更加順暢！ 
